@@ -627,6 +627,7 @@ function addArchivedWaIds(ids){
   (ids||[]).forEach(id => { if(id) s.add(id); });
   localStorage.setItem('wa_archived_ids', JSON.stringify([...s]));
 }
+const waJustCreated = new Set();
 function mergeOrders(local, remote){
   const loc = Array.isArray(local) ? local : [];
   const rem = Array.isArray(remote) ? remote : [];
@@ -636,8 +637,7 @@ function mergeOrders(local, remote){
   loc.forEach(o => {
     if(!o || !o.id || banned.has(o.id)) return;
     if(!map[o.id]){
-      const t = Date.parse(String(o.receivedDate||'').replace(' ','T')) || 0;
-      if(Date.now() - t < 3*60*1000) map[o.id] = o;
+      if(waJustCreated.has(o.id)) map[o.id] = o;
       return;
     }
     if(orderStamp(o) >= orderStamp(map[o.id])) map[o.id] = o;
@@ -681,8 +681,10 @@ async function pullOrdersFromCloud(){
     const { data, error } = await sb.from('registros_pedidos').select('orders').eq('id', WA_SYNC_ID).maybeSingle();
     if(error){ console.warn('Sync pull:', error.message); return; }
     if(data && Array.isArray(data.orders)){
+      const banned = getArchivedWaIds();
       applyingRemote = true;
-      state.orders = mergeOrders(state.orders, data.orders);
+      // La nube manda: no resucitar pedidos ya archivados ni basura local
+      state.orders = data.orders.filter(o => o && o.id && !banned.has(o.id));
       localStorage.setItem('orders_whatsapp', JSON.stringify(state.orders));
       applyingRemote = false;
     }
@@ -2193,7 +2195,7 @@ function submitRestOrder(){
   const pad=n=>String(n).padStart(2,'0');
   const received=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   const newOrder={
-    id:'WA-'+Math.random().toString(36).substr(2,8).toUpperCase(),
+    id:'WA-'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).substr(2,4).toUpperCase(),
     rest:state.selRest,
     deliveryDate:state.deliveryDate,
     planta: state.selRest==='METROPOLIS' ? (state.metropolisPlanta||'') : '',
@@ -2216,6 +2218,7 @@ function submitRestOrder(){
       return item;
     })
   };
+  waJustCreated.add(newOrder.id);
   state.orders.unshift(newOrder);
   saveState();
 
@@ -2544,7 +2547,7 @@ function renderAPPCC(){
   if(!checkModuleAuth('APPCC')){ renderModuleLogin('APPCC','ÁREA PRIVADA'); return; }
 
   // Historial local de pedidos vía WhatsApp (este dispositivo)
-  const disp=sortNewestFirst(state.orders||[]);
+  const disp=sortNewestFirst((state.orders||[]).filter(o=>!getArchivedWaIds().has(o.id)));
   const rows = [];
   disp.forEach(o => {
     (o.items||[]).forEach(it => {
@@ -2601,7 +2604,6 @@ function renderAPPCC(){
     <div class="section-title" style="margin-bottom:0.5rem">Pedidos guardados (${disp.length})</div>
     <div style="margin-bottom:0.75rem;display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center">
       <button class="btn" onclick="exportWhatsAppCSV()">⬇ Descargar CSV</button>
-      ${state.pendingArchiveIds&&state.pendingArchiveIds.length?`<button class="btn" style="background:#b91c1c" onclick="confirmWhatsAppArchive()">Confirmar archivo y borrar (${state.pendingArchiveIds.length} pedidos)</button>`:''}
     </div>
     <div class="table-scroll" style="max-height:70vh;overflow:auto">
       <table class="table-module" style="min-width:900px">
@@ -2809,17 +2811,10 @@ function exportWhatsAppCSV(){
   }
   const stamp = new Date().toISOString().slice(0,10);
   downloadCSVFile(csv, 'PEDIDOS_WHATSAPP_'+stamp+'.csv');
-  state.pendingArchiveIds = matched.map(o=>o.id);
-  state.pendingArchiveLines = lines;
-  state.successMessage = 'CSV descargado: '+lines+' líneas. Tocá “Confirmar archivo y borrar” para quitarlos de la nube.';
-  render();
-}
-function confirmWhatsAppArchive(){
-  const ids = new Set(state.pendingArchiveIds||[]);
-  if(!ids.size){ alert('No hay una descarga pendiente de confirmar.'); return; }
-  if(!confirm('¿Borrar de la nube los '+ids.size+' pedidos que acabás de descargar? No se pueden recuperar en la app.')) return;
-  addArchivedWaIds([...ids]);
-  state.orders = (state.orders||[]).filter(o => !ids.has(o.id));
+  const ids = matched.map(o=>o.id);
+  addArchivedWaIds(ids);
+  const idset = new Set(ids);
+  state.orders = (state.orders||[]).filter(o => !idset.has(o.id));
   state.pendingArchiveIds = null;
   state.pendingArchiveLines = 0;
   localStorage.setItem('orders_whatsapp', JSON.stringify(state.orders));
@@ -2827,7 +2822,7 @@ function confirmWhatsAppArchive(){
     clearTimeout(syncTimer);
     pushOrdersToCloud(true);
   }
-  state.successMessage = 'Archivado. Esos pedidos ya no están en la app.';
+  state.successMessage = 'CSV descargado ('+lines+' líneas) y borrado de la app.';
   render();
 }
 function exportCSVRange(){
