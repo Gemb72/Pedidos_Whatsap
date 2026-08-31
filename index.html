@@ -1955,7 +1955,10 @@ function renderRestaurantes(){
         const area=String(i.area||'').replace(/'/g,"\'");
         return `<div class="cart-item-row"><div class="cart-item-info"><span class="cart-item-name">${nombreCortoWA(i.name,i.area)}</span><span class="cart-item-area">${i.area||''}</span></div><div style="display:flex;align-items:center;gap:0.35rem"><div class="qty-controls"><button type="button" onclick="updateCartItem('${safe}','${area}',-1)">-</button><input type="number" min="0" inputmode="numeric" pattern="[0-9]*" value="${i.qty}" onfocus="this.select()" onchange="setCartQty('${safe}','${area}',this.value)" onblur="setCartQty('${safe}','${area}',this.value)"><button type="button" onclick="updateCartItem('${safe}','${area}',1)">+</button></div><button class="btn-remove-item" onclick="removeFromCart('${safe}','${area}')" title="Quitar">×</button></div></div>`;
       }).join('')}
-      <button type="button" class="btn-back" style="margin-top:0.5rem;width:100%" onclick="state.restOrderPanel='CATALOGO';render()">← Volver al catálogo</button>
+      <div style="display:flex;gap:0.45rem;margin-top:0.5rem;flex-wrap:wrap">
+        <button type="button" class="btn-back" style="flex:1;min-width:140px" onclick="state.restOrderPanel='CATALOGO';render()">← Volver al catálogo</button>
+        ${state.cart.length?`<button type="button" class="btn-back" style="flex:1;min-width:140px;border-color:#b91c1c;color:#b91c1c" onclick="clearRestPedido()">Borrar pedido</button>`:''}
+      </div>
     </div>
   ` : `
     <div class="order-card">
@@ -2112,6 +2115,17 @@ function setCartQtyFromTab(name, raw){
 }
 function setCartQtyOtros(name, raw){
   setCartQty(name, 'OTROS', raw);
+}
+function clearRestPedido(){
+  if(!(state.cart||[]).length) return;
+  if(!confirm('¿Borrar todo el pedido?')) return;
+  state.cart=[];
+  state.deliveryDate='';
+  state.metropolisPlanta='';
+  clearRestDraft(state.selRest);
+  persistRestDraft();
+  state.restOrderPanel='CATALOGO';
+  render();
 }
 function removeFromCart(name, area){
   saveRestScroll();
