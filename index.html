@@ -618,13 +618,23 @@ const WA_SYNC_ID = 2; // fila aparte de la TOP (id 1)
 function orderStamp(o){
   return String((o && (o.modifiedDate || o.receivedDate)) || '');
 }
+function getArchivedWaIds(){
+  try{ return new Set(JSON.parse(localStorage.getItem('wa_archived_ids')||'[]')); }
+  catch(e){ return new Set(); }
+}
+function addArchivedWaIds(ids){
+  const s = getArchivedWaIds();
+  (ids||[]).forEach(id => { if(id) s.add(id); });
+  localStorage.setItem('wa_archived_ids', JSON.stringify([...s]));
+}
 function mergeOrders(local, remote){
   const loc = Array.isArray(local) ? local : [];
   const rem = Array.isArray(remote) ? remote : [];
+  const banned = getArchivedWaIds();
   const map = {};
-  rem.forEach(o => { if(o && o.id) map[o.id] = o; });
+  rem.forEach(o => { if(o && o.id && !banned.has(o.id)) map[o.id] = o; });
   loc.forEach(o => {
-    if(!o || !o.id) return;
+    if(!o || !o.id || banned.has(o.id)) return;
     if(!map[o.id]){
       const t = Date.parse(String(o.receivedDate||'').replace(' ','T')) || 0;
       if(Date.now() - t < 3*60*1000) map[o.id] = o;
@@ -643,19 +653,22 @@ function saveState(){
   }
 }
 
-async function pushOrdersToCloud(){
+async function pushOrdersToCloud(forceLocal){
   if(!sb || !syncReady) return;
   try{
-    const { data } = await sb.from('registros_pedidos').select('orders').eq('id', WA_SYNC_ID).maybeSingle();
-    const remote = (data && Array.isArray(data.orders)) ? data.orders : [];
-    const merged = mergeOrders(state.orders, remote);
-    applyingRemote = true;
-    state.orders = merged;
-    localStorage.setItem('orders_whatsapp', JSON.stringify(state.orders));
-    applyingRemote = false;
+    let payload = state.orders || [];
+    if(!forceLocal){
+      const { data } = await sb.from('registros_pedidos').select('orders').eq('id', WA_SYNC_ID).maybeSingle();
+      const remote = (data && Array.isArray(data.orders)) ? data.orders : [];
+      payload = mergeOrders(state.orders, remote);
+      applyingRemote = true;
+      state.orders = payload;
+      localStorage.setItem('orders_whatsapp', JSON.stringify(state.orders));
+      applyingRemote = false;
+    }
     const { error } = await sb.from('registros_pedidos').upsert({
       id: WA_SYNC_ID,
-      orders: merged,
+      orders: payload,
       updated_at: new Date().toISOString()
     });
     if(error) console.warn('Sync push:', error.message);
@@ -2193,7 +2206,7 @@ function submitRestOrder(){
         qty:Number(i.qty)||0,
         area:i.area||'OTROS',
         dispatchedQty:Number(i.qty)||0,
-        lote: state.deliveryDate
+        lote: ''
       };
       if(!skipAPPCC(item)){
         const t=generateTemperatures(item.name, state.selRest, item.area, state.deliveryDate);
@@ -2785,7 +2798,7 @@ function exportWhatsAppCSV(){
       if(state.dlProdSearch && !itemMatchesProduct(it, state.dlProdSearch)) return;
       const prod = String(it.name||'').replace(/"/g,'""');
       const area = it.area || '';
-      const lote = it.lote ? fmtD(it.lote) : (fechaExp ? fmtD(fechaExp) : '');
+      const lote = '';
       csv += anio+';'+mes+';'+area+';'+fmtD(fechaExp)+';'+(o.rest||'')+(o.planta?(' '+o.planta):'')+';"'+prod+'";'+lote+';'+qty+';'+fmtTempCSV(it.tempSalida)+';'+fmtTempCSV(it.tempRecepcion)+'\n';
       lines++;
     });
@@ -2805,10 +2818,15 @@ function confirmWhatsAppArchive(){
   const ids = new Set(state.pendingArchiveIds||[]);
   if(!ids.size){ alert('No hay una descarga pendiente de confirmar.'); return; }
   if(!confirm('¿Borrar de la nube los '+ids.size+' pedidos que acabás de descargar? No se pueden recuperar en la app.')) return;
+  addArchivedWaIds([...ids]);
   state.orders = (state.orders||[]).filter(o => !ids.has(o.id));
   state.pendingArchiveIds = null;
   state.pendingArchiveLines = 0;
-  saveState();
+  localStorage.setItem('orders_whatsapp', JSON.stringify(state.orders));
+  if(sb && syncReady){
+    clearTimeout(syncTimer);
+    pushOrdersToCloud(true);
+  }
   state.successMessage = 'Archivado. Esos pedidos ya no están en la app.';
   render();
 }
