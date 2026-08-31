@@ -1877,6 +1877,7 @@ function renderRestaurantes(){
       <p style="text-align:center;font-size:0.68rem;color:var(--text-muted);letter-spacing:0.2em;text-transform:uppercase;font-weight:400;margin:0">vía WhatsApp</p>
       <div style="width:28px;height:1px;background:var(--gold);margin:0.5rem auto 0"></div>
     </div>
+    <p style="text-align:center;font-size:0.72rem;color:#f8fafc;background:#0f172a;margin:0.75rem 0 0;padding:0.55rem 0.7rem;line-height:1.4;letter-spacing:0;text-transform:none">Al terminar, cerrá la pestaña del navegador para no saturar el sistema.</p>
     <div class="order-card" style="max-width:420px;margin:0.85rem auto 0">
       <p style="margin-bottom:0.9rem;text-align:center;font-size:0.72rem;color:var(--text-muted);letter-spacing:0.12em;text-transform:uppercase">Seleccione restaurante</p>
       <div class="rest-grid-select">
@@ -1923,6 +1924,7 @@ function renderRestaurantes(){
     <button class="btn-back" onclick="state.authRest=false;state.selRest='';state.cart=[];state.view='RESTAURANTES';render()">← Salir</button>
     <div><strong>${state.selRest}</strong></div>
   </div>
+  <p style="text-align:center;font-size:0.72rem;color:#f8fafc;background:#0f172a;margin:0 0 0.65rem;padding:0.55rem 0.7rem;border-radius:6px;line-height:1.4">Al terminar el pedido, cerrá la pestaña del navegador para no saturar el sistema.</p>
   ${state.successMessage?`<div class="success-message"><div><strong>✓ Pedido realizado con éxito</strong><br>${state.successMessage}</div><button class="success-close" onclick="state.successMessage='';render()">×</button></div>`:''}
 
   <div>
