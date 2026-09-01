@@ -977,7 +977,6 @@ function render(){
   else if(state.view==='RESTAURANTES')renderRestaurantes();
   else if(state.view==='HELADERIA')renderHeladeria();
   else if(state.view==='APPCC')renderAPPCC();
-  else if(state.view==='INVENTARIO')renderInventario();
   restoreRestScroll();
 }
 
@@ -2257,244 +2256,19 @@ function submitRestOrder(){
   state.restOrderPanel='CATALOGO';
   clearRestDraft(state.selRest);
   state.authRest=true;
-  state.successMessage='WhatsApp abierto. Pedido guardado para descarga (ID: '+newOrder.id+').';
+  state.successMessage='';
   render();
-}
-
-// ── INVENTARIO ────────────────────────────────────────
-const INVENTORY_MASTER = [
-  {area:'CONGELADOR',name:'Aceite Carabinero (C)'},
-  {area:'CONGELADOR',name:'Aceite de Periquito (C)'},
-  {area:'CONGELADOR',name:'Caldo de manitas PARAGUAS (C)'},
-  {area:'CONGELADOR',name:'Caldo de Mariscos (C)'},
-  {area:'CONGELADOR',name:'Caldo de Pato (C)'},
-  {area:'CONGELADOR',name:'Caldo de Pollo / Gallina (C)'},
-  {area:'CONGELADOR',name:'Cebolla Pochada (C)'},
-  {area:'CONGELADOR',name:'Emulsion de Aceituna verde (C)'},
-  {area:'CONGELADOR',name:'Fumet de pescado (C)'},
-  {area:'CONGELADOR',name:'Hamburguesa de Rabo de toro 100g. LIBRARY'},
-  {area:'CONGELADOR',name:'Hamburguesa de Rabo de toro 50g. LIBRARY'},
-  {area:'CONGELADOR',name:'Hamburguesa de Rabo de toro AUREA'},
-  {area:'CONGELADOR',name:'Hamburguesa de Rabo de toro TENCONTEN'},
-  {area:'CONGELADOR',name:'Jugo de ternera (C)'},
-  {area:'CONGELADOR',name:'Manitas (C)'},
-  {area:'CONGELADOR',name:'Masa Rabo de Toro PARAGUAS (C)'},
-  {area:'CONGELADOR',name:'Masa Rabo de Toro QUINTIN (C)'},
-  {area:'CONGELADOR',name:'Salsa Bogavante (C)'},
-  {area:'CONGELADOR',name:'Salsa Curry AARDE (C)'},
-  {area:'CONGELADOR',name:'Salsa de Cochinita (C)'},
-  {area:'CONGELADOR',name:'Salsa de Manitas (C)'},
-  {area:'CONGELADOR',name:'Salsa de rabo PX (C)'},
-  {area:'CONGELADOR',name:'Vinagreta de Frambuesa (C)'},
-  {area:'CONGELADOR',name:'Vinagreta de tomate (C)'},
-  {area:'PREPARACION',name:'Aceite de Cayena'},
-  {area:'PREPARACION',name:'Aceite de Mostaza'},
-  {area:'PREPARACION',name:'Chimichurri'},
-  {area:'PREPARACION',name:'Crema de Maiz'},
-  {area:'PREPARACION',name:'Cremoso Foie-Gras'},
-  {area:'PREPARACION',name:'Ensaladilla'},
-  {area:'PREPARACION',name:'Gazpacho de Acai'},
-  {area:'PREPARACION',name:'Gazpacho de Sandia'},
-  {area:'PREPARACION',name:'Gazpacho de tomate'},
-  {area:'PREPARACION',name:'Gazpacho de tomate, jalapeño Y hierbas'},
-  {area:'PREPARACION',name:'Humus'},
-  {area:'PREPARACION',name:'Paletilla Cordero c/Huacatay AMAZONICO'},
-  {area:'PREPARACION',name:'Patata Baston QUINTIN'},
-  {area:'PREPARACION',name:'Patata Pelada AARDE'},
-  {area:'PREPARACION',name:'Patata Pelada QUINTIN'},
-  {area:'PREPARACION',name:'Piña torneada'},
-  {area:'PREPARACION',name:'Remolacha Blanca Cocida'},
-  {area:'PREPARACION',name:'Remolacha Morada Cocida'},
-  {area:'PREPARACION',name:'Remolacha Naranja Cocida'},
-  {area:'PREPARACION',name:'Remolacha Rosada Cocida'},
-  {area:'PREPARACION',name:'Salsa Agridulce de pimiento y piña'},
-  {area:'PREPARACION',name:'Salsa Curry Amazonico'},
-  {area:'PREPARACION',name:'Salsa verde'},
-  {area:'PREPARACION',name:'VERDURA P/ ROLLITO DE PATO'},
-  {area:'PREPARACION',name:'VERDURA p/ ROLLITO DE POLLO'},
-  {area:'PREPARACION',name:'Vichyssoise AARDE'},
-  {area:'PREPARACION',name:'Yema cocida'}
-];
-
-function normalizeName(s){
-  return (s||'').toLowerCase().replace(/\s+/g,' ').trim();
-}
-
-function getDispatchStats(days){
-  const rests = Object.keys(RESTAURANTS_CONFIG);
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - (Number(days)||120));
-  const cutoffStr = cutoff.toISOString().slice(0,10);
-
-  const stats = {}; // nameNorm -> { total, byRest: {rest: qty} }
-
-  state.orders.filter(o => o.status === 'Despachado').forEach(o => {
-    const d = o.deliveryDate || '';
-    if(d < cutoffStr) return;
-    o.items.forEach(it => {
-      const poz = isAutoLote(it);
-      const qty = Number(poz ? it.qty : (it.dispatchedQty || 0));
-      if(qty <= 0) return;
-      const key = normalizeName(it.name);
-      if(!stats[key]) stats[key] = { total: 0, byRest: {} };
-      stats[key].total += qty;
-      stats[key].byRest[o.rest] = (stats[key].byRest[o.rest] || 0) + qty;
-    });
-  });
-  return stats;
-}
-
-function setInventKilos(name, value){
-  let v = parseFloat(value);
-  if(isNaN(v) || v < 0) v = 0;
-  if(v === 0) delete state.inventory[name];
-  else state.inventory[name] = v;
-  saveState();
-  render();
-}
-
-function renderInventario(){
-  if(!checkModuleAuth('INVENTARIO')){ renderModuleLogin('INVENTARIO','Inventario'); return; }
-
-  const rests = Object.keys(RESTAURANTS_CONFIG);
-  const days = Number(state.inventDays) || 120;
-  const stats = getDispatchStats(days);
-  const areas = ['TODAS','CONGELADOR','PREPARACION'];
-
-  let list = INVENTORY_MASTER;
-  if(state.inventArea && state.inventArea !== 'TODAS'){
-    list = list.filter(p => p.area === state.inventArea);
-  }
-  if(state.inventSearch){
-    const q = state.inventSearch.toLowerCase();
-    list = list.filter(p => p.name.toLowerCase().includes(q) || p.area.toLowerCase().includes(q));
-  }
-
-  // Vista por restaurante (para screenshot WhatsApp)
-  if(state.inventView === 'RESTAURANTE' && state.inventRest){
-    const rest = state.inventRest;
-    const rows = [];
-    INVENTORY_MASTER.forEach(p => {
-      const key = normalizeName(p.name);
-      const st = stats[key];
-      const kilos = Number(state.inventory[p.name] || 0);
-      if(kilos <= 0 || !st || st.total <= 0) return;
-      const restQty = st.byRest[rest] || 0;
-      const pct = restQty / st.total;
-      const kg = kilos * pct;
-      if(kg > 0.001) rows.push({name: p.name, kg: kg});
-    });
-    rows.sort((a,b)=>a.name.localeCompare(b.name,'es'));
-
-    app.innerHTML=`
-    <div class="nav-header">
-      <button class="btn-back" onclick="state.inventView='CALCULO';render()">← Volver a cálculo</button>
-      <h2>${rest}</h2>
-    </div>
-    <div class="order-card" style="max-width:420px;margin:0 auto">
-      <div style="text-align:center;font-weight:700;font-size:0.95rem;margin-bottom:0.75rem;text-transform:uppercase">${rest} — Inventario</div>
-      <table class="table-module">
-        <thead><tr><th style="width:75%">PRODUCTO</th><th style="width:25%">KG</th></tr></thead>
-        <tbody>
-          ${rows.length===0?`<tr><td colspan="2" style="text-align:center;color:var(--text-muted);padding:1rem">Sin datos para este restaurante</td></tr>`:
-            rowsF.map(r=>`<tr>
-              <td><span class="prod-name">${r.name}</span></td>
-              <td style="font-weight:700;font-size:0.9rem">${r.kg.toFixed(2).replace('.',',')}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.75rem;text-align:center">Captura esta pantalla y envíala por WhatsApp</p>
-    </div>`;
-    return;
-  }
-
-  // Vista principal de cálculo
-  app.innerHTML=`
-  <div class="nav-header">
-    <button class="btn-back" onclick="navigateTo('HOME')">← Volver</button>
-    <h2>Inventario</h2>
-  </div>
-
-  <div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;margin-bottom:0.75rem">
-    <label style="font-size:0.75rem;font-weight:700;margin:0">Período (días):</label>
-    <input type="number" min="1" max="730" value="${days}" style="width:70px;padding:0.3rem;font-size:0.8rem"
-      onchange="state.inventDays=parseInt(this.value)||120;render()">
-    <span style="font-size:0.7rem;color:var(--text-muted)">· % calculados de despachos de los últimos ${days} días</span>
-  </div>
-
-  <div class="section-title">FILTRAR POR ÁREA</div>
-  <div class="restaurant-filters" style="margin-bottom:0.75rem">
-    ${areas.map(a=>{
-      const cls = state.inventArea===a ? 'active' : '';
-      return `<button class="restaurant-filter-btn ${cls}" onclick="state.inventArea='${a}';render()">${a}</button>`;
-    }).join('')}
-  </div>
-
-  <input type="text" placeholder="Buscar producto..." value="${state.inventSearch||''}"
-    oninput="state.inventSearch=this.value;render()" style="margin-bottom:0.75rem">
-
-  <div class="section-title" style="margin-bottom:0.4rem">EXPORTAR PARA RESTAURANTE (captura WhatsApp)</div>
-  <div class="restaurant-filters" style="margin-bottom:1rem">
-    ${rests.map(r=>`<button class="restaurant-filter-btn" onclick="state.inventView='RESTAURANTE';state.inventRest='${r}';render()">${r}</button>`).join('')}
-  </div>
-
-  <div class="order-card"><div class="table-scroll">
-    <table class="table-module" style="min-width:900px">
-      <thead>
-        <tr>
-          <th>ÁREA</th>
-          <th>PRODUCTO</th>
-          ${rests.map(r=>`<th style="font-size:0.65rem">${r.substring(0,6)}</th>`).join('')}
-          <th>TOTAL</th>
-          <th style="background:#fef3c7">INVENTARIO (kg)</th>
-          ${rests.map(r=>`<th style="font-size:0.65rem;background:#f0fdf4">${r.substring(0,6)}</th>`).join('')}
-        </tr>
-      </thead>
-      <tbody>
-        ${list.length===0?`<tr><td colspan="${3+rests.length*2}" style="text-align:center;color:var(--text-muted);padding:1rem">Sin productos</td></tr>`:
-          list.map(p => {
-            const key = normalizeName(p.name);
-            const st = stats[key] || { total: 0, byRest: {} };
-            const kilos = Number(state.inventory[p.name] || 0);
-            const safeName = p.name.replace(/'/g,"\\'");
-            return `<tr>
-              <td style="font-size:0.65rem;color:var(--text-muted);white-space:nowrap">${p.area}</td>
-              <td><span class="prod-name" style="font-size:0.75rem">${p.name}</span></td>
-              ${rests.map(r => {
-                const q = st.byRest[r] || 0;
-                const pct = st.total > 0 ? (q / st.total * 100) : 0;
-                return `<td style="font-size:0.7rem;text-align:center">${q>0?pct.toFixed(0)+'%':'—'}</td>`;
-              }).join('')}
-              <td style="font-weight:700;font-size:0.75rem;text-align:center">${st.total>0?st.total:'—'}</td>
-              <td style="background:#fef9c3">
-                <input type="number" min="0" step="0.01" value="${kilos||''}" placeholder="0"
-                  style="width:70px;padding:0.2rem;font-size:0.8rem;font-weight:700;background:#fef9c3;border:1px solid #fde68a;border-radius:4px"
-                  onchange="setInventKilos('${safeName}', this.value)">
-              </td>
-              ${rests.map(r => {
-                const q = st.byRest[r] || 0;
-                const pct = st.total > 0 ? (q / st.total) : 0;
-                const kg = kilos * pct;
-                return `<td style="font-size:0.75rem;text-align:center;background:#f0fdf4;font-weight:${kg>0?'700':'400'};color:${kg>0?'#166534':'var(--text-muted)'}">${kg>0.001?kg.toFixed(2).replace('.',','):'—'}</td>`;
-              }).join('')}
-            </tr>`;
-          }).join('')}
-      </tbody>
-    </table>
-  </div></div>
-  <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.5rem">
-    Columna amarilla = kilos reales del inventario. Las columnas verdes = kilos que le corresponden a cada restaurante según su % de despacho en los últimos ${days} días.
-  </p>`;
 }
 
 // ── APPCC ─────────────────────────────────────────────
+function normalizeName(s){
+  return (s||'').toLowerCase().replace(/\s+/g,' ').trim();
+}
 function getProductArea(name, itemArea){
-  const key = normalizeName(name);
-  const found = INVENTORY_MASTER.find(p => normalizeName(p.name) === key);
-  if(found) return found.area;
   const n = (name||'').toLowerCase();
-  if(itemArea === 'HELADOS' || n.includes('helado') || n.includes('sorbete') || n.includes('pozzetti') || n.includes('tupper')) return 'HELADERIA';
+  if(itemArea === 'HELADOS' || n.includes('helado') || n.includes('sorbete') || n.includes('pozzetti')) return 'HELADERIA';
   if(itemArea === 'PANADERIA') return 'PANADERIA';
+  if(itemArea === 'CARNES' || itemArea === 'CARNE') return 'CARNE';
   if(n.includes('(c)') || n.includes('congel')) return 'CONGELADOR';
   return 'PREPARACION';
 }
