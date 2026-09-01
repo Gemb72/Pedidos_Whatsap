@@ -978,6 +978,8 @@ function render(){
   else if(state.view==='HELADERIA')renderHeladeria();
   else if(state.view==='APPCC')renderAPPCC();
   restoreRestScroll();
+  const badge=document.getElementById('sync-badge');
+  if(badge) badge.style.display = state.view==='APPCC' ? 'block' : 'none';
 }
 
 // ── HOME ──────────────────────────────────────────────
@@ -1869,7 +1871,9 @@ function switchToHeladeriaTab(tab){
 
 function setHeladeriaFilter(r){state.heladeriaFilter=r;render();}
 
-// ── RESTAURANTES ──────────────────────────────────────
+function hintCierreTab(){
+  return `<p style="text-align:center;font-size:0.62rem;color:#e2e8f0;background:#0f172a;margin:0 0 0.55rem;padding:0.35rem 0.55rem;line-height:1.35">Al terminar, cerrá la pestaña del navegador.</p>`;
+}
 function renderRestaurantes(){
   const rests=Object.keys(RESTAURANTS_CONFIG);
   if(state.selRest && !rests.includes(state.selRest)) state.selRest='';
@@ -1888,7 +1892,7 @@ function renderRestaurantes(){
       <p style="text-align:center;font-size:0.68rem;color:var(--text-muted);letter-spacing:0.2em;text-transform:uppercase;font-weight:400;margin:0">vía WhatsApp</p>
       <div style="width:28px;height:1px;background:var(--gold);margin:0.5rem auto 0"></div>
     </div>
-    <p style="text-align:center;font-size:0.72rem;color:#f8fafc;background:#0f172a;margin:0.75rem 0 0;padding:0.55rem 0.7rem;line-height:1.4;letter-spacing:0;text-transform:none">Al terminar, cerrá la pestaña del navegador para no saturar el sistema.</p>
+    ${hintCierreTab()}
     <div class="order-card" style="max-width:420px;margin:0.85rem auto 0">
       <p style="margin-bottom:0.9rem;text-align:center;font-size:0.72rem;color:var(--text-muted);letter-spacing:0.12em;text-transform:uppercase">${state.lockedRest ? state.lockedRest : 'Seleccione restaurante'}</p>
       ${state.lockedRest ? '' : `<div class="rest-grid-select">
@@ -1935,7 +1939,6 @@ function renderRestaurantes(){
     <button class="btn-back" onclick="state.authRest=false;state.selRest='';state.cart=[];state.view='RESTAURANTES';render()">← Salir</button>
     <div><strong>${state.selRest}</strong></div>
   </div>
-  <p style="text-align:center;font-size:0.72rem;color:#f8fafc;background:#0f172a;margin:0 0 0.65rem;padding:0.55rem 0.7rem;border-radius:6px;line-height:1.4">Al terminar el pedido, cerrá la pestaña del navegador para no saturar el sistema.</p>
   ${state.successMessage?`<div class="success-message"><div><strong>✓ Pedido realizado con éxito</strong><br>${state.successMessage}</div><button class="success-close" onclick="state.successMessage='';render()">×</button></div>`:''}
 
   <div>
@@ -1946,12 +1949,13 @@ function renderRestaurantes(){
   ${state.restOrderPanel==='PRECHECK' ? `
     <div class="order-card">
             <div class="section-title">Resumen del pedido</div>
-      <div style="display:flex;flex-wrap:nowrap;gap:0.45rem;align-items:flex-end;margin-bottom:0.75rem">
+      <div style="display:flex;flex-wrap:wrap;gap:0.4rem;align-items:flex-end;margin-bottom:0.75rem">
         <div class="form-group" style="margin:0;flex:0 0 auto">
           <label>Fecha de entrega</label>
-          <input type="date" max="2099-12-31" value="${state.deliveryDate}" onchange="state.deliveryDate=this.value;persistRestDraft()" style="width:150px;max-width:150px">
+          <input type="date" max="2099-12-31" value="${state.deliveryDate}" onchange="state.deliveryDate=this.value;persistRestDraft()" style="width:140px;max-width:46vw">
         </div>
-        ${state.cart.length>0?`<button class="btn-confirm" style="width:auto;margin:0;min-height:38px;height:38px;padding:0.35rem 0.9rem;white-space:nowrap;flex:0 0 auto" onclick="submitRestOrder()">Enviar WhatsApp</button>`:''}
+        ${state.cart.length>0?`<button class="btn-confirm" style="width:auto;margin:0;min-height:36px;height:36px;padding:0.3rem 0.7rem;white-space:nowrap" onclick="submitRestOrder()">Enviar WhatsApp</button>`:''}
+        ${state.cart.length?`<button type="button" class="btn-back" style="margin:0;min-height:36px;height:36px;padding:0.3rem 0.7rem;border-color:#b91c1c;color:#b91c1c;white-space:nowrap" onclick="clearRestPedido()">Borrar pedido</button>`:''}
       </div>
       ${state.selRest==='METROPOLIS' ? `<div class="form-group">
         <label>Planta</label>
@@ -1966,10 +1970,7 @@ function renderRestaurantes(){
         const area=String(i.area||'').replace(/'/g,"\'");
         return `<div class="cart-item-row"><div class="cart-item-info"><span class="cart-item-name">${nombreCortoWA(i.name,i.area)}</span><span class="cart-item-area">${i.area||''}</span></div><div style="display:flex;align-items:center;gap:0.35rem"><div class="qty-controls"><button type="button" onclick="updateCartItem('${safe}','${area}',-1)">-</button><input type="number" min="0" inputmode="numeric" pattern="[0-9]*" value="${i.qty}" onfocus="this.select()" onchange="setCartQty('${safe}','${area}',this.value)" onblur="setCartQty('${safe}','${area}',this.value)"><button type="button" onclick="updateCartItem('${safe}','${area}',1)">+</button></div><button class="btn-remove-item" onclick="removeFromCart('${safe}','${area}')" title="Quitar">×</button></div></div>`;
       }).join('')}
-      <div style="display:flex;gap:0.45rem;margin-top:0.5rem;flex-wrap:wrap">
-        <button type="button" class="btn-back" style="flex:1;min-width:140px" onclick="state.restOrderPanel='CATALOGO';render()">← Volver al catálogo</button>
-        ${state.cart.length?`<button type="button" class="btn-back" style="flex:1;min-width:140px;border-color:#b91c1c;color:#b91c1c" onclick="clearRestPedido()">Borrar pedido</button>`:''}
-      </div>
+      <button type="button" class="btn-back" style="margin-top:0.5rem;width:100%" onclick="state.restOrderPanel='CATALOGO';render()">← Volver al catálogo</button>
     </div>
   ` : `
     <div class="order-card">
