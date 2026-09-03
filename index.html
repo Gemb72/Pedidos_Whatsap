@@ -1941,7 +1941,7 @@ function renderRestaurantes(){
 
   app.innerHTML=`
   <div class="nav-header">
-    <button class="btn-back" onclick="salirRest()">← Salir</button>
+    ${state.lockedRest ? '<span></span>' : `<button class="btn-back" onclick="salirRest()">← Salir</button>`}
     <div><strong>${state.selRest}</strong></div>
   </div>
   ${state.successMessage?`<div class="success-message"><div><strong>✓ Pedido realizado con éxito</strong><br>${state.successMessage}</div><button class="success-close" onclick="state.successMessage='';render()">×</button></div>`:''}
