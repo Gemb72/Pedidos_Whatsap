@@ -557,6 +557,7 @@ let state={
   restHistTo:'',
   restProdSearch:'',
   cart:[],deliveryDate:'',
+  entregaTarde:false,
   orderNote:'',
   metropolisPlanta:'',
   orders:JSON.parse(localStorage.getItem('orders_whatsapp')||'[]'),
@@ -2006,6 +2007,10 @@ function renderRestaurantes(){
         ${state.cart.length>0?`<button class="btn-confirm" style="width:auto;margin:0;min-height:36px;height:36px;padding:0.3rem 0.7rem;white-space:nowrap" onclick="submitRestOrder()">Enviar WhatsApp</button>`:''}
         ${state.cart.length?`<button type="button" class="btn-back" style="margin:0;min-height:36px;height:36px;padding:0.3rem 0.7rem;border-color:#b91c1c;color:#b91c1c;white-space:nowrap" onclick="clearRestPedido()">Borrar pedido</button>`:''}
       </div>
+      ${state.selRest==='LIBRARY' ? `<label style="display:flex;align-items:center;gap:0.45rem;margin:0 0 0.75rem;font-size:0.82rem;cursor:pointer">
+        <input type="checkbox" ${state.entregaTarde?'checked':''} onchange="state.entregaTarde=this.checked;persistRestDraft()">
+        Pedido para la tarde
+      </label>` : ''}
       ${state.selRest==='METROPOLIS' ? `<div class="form-group">
         <label>Planta</label>
         <select onchange="state.metropolisPlanta=this.value;persistRestDraft()">
@@ -2107,6 +2112,7 @@ function persistRestDraft(){
     const payload = {
       cart: state.cart || [],
       deliveryDate: state.deliveryDate || '',
+      entregaTarde: !!state.entregaTarde,
       orderNote: state.orderNote || '',
       metropolisPlanta: state.metropolisPlanta || '',
       restOrderPanel: state.restOrderPanel || 'CATALOGO'
@@ -2122,6 +2128,7 @@ function loadRestDraft(rest){
     if(d && Array.isArray(d.cart) && d.cart.length){
       state.cart = d.cart;
       state.deliveryDate = d.deliveryDate || state.deliveryDate || '';
+      state.entregaTarde = !!d.entregaTarde;
       state.orderNote = d.orderNote || '';
       state.metropolisPlanta = d.metropolisPlanta || '';
       state.restOrderPanel = d.restOrderPanel || 'CATALOGO';
@@ -2213,6 +2220,7 @@ function clearRestPedido(){
   if(!confirm('¿Borrar todo el pedido?')) return;
   state.cart=[];
   state.deliveryDate='';
+  state.entregaTarde=false;
   state.orderNote='';
   state.metropolisPlanta='';
   clearRestDraft(state.selRest);
@@ -2275,9 +2283,10 @@ function buildWhatsAppOrderText(){
   const rest = state.selRest || '';
   const fecha = fmtDateWA(state.deliveryDate);
   const planta = state.selRest==='METROPOLIS' && state.metropolisPlanta ? ('\nPlanta: '+state.metropolisPlanta) : '';
+  const tarde = state.entregaTarde ? '. - POR LA TARDE' : '';
   let lines = [];
   lines.push('*PEDIDO '+rest+'*');
-  lines.push('Para: '+fecha + planta);
+  lines.push('Para: '+fecha + tarde + planta);
   lines.push('');
   const byArea = {};
   (state.cart||[]).forEach(i=>{
@@ -2324,6 +2333,7 @@ function submitRestOrder(){
     rest:state.selRest,
     deliveryDate:state.deliveryDate,
     planta: state.selRest==='METROPOLIS' ? (state.metropolisPlanta||'') : '',
+    turno: state.entregaTarde ? 'TARDE' : '',
     note: (state.orderNote||'').trim(),
     receivedDate:received,
     status:'Despachado',
@@ -2351,6 +2361,7 @@ function submitRestOrder(){
   window.open(url, '_blank');
   state.cart=[];
   state.deliveryDate='';
+  state.entregaTarde=false;
   state.orderNote='';
   state.metropolisPlanta='';
   state.restOrderPanel='CATALOGO';
@@ -2581,7 +2592,7 @@ function buildExpedicionCSV(orders){
       const ts = fmtTempCSV(it.tempSalida);
       const tr = fmtTempCSV(it.tempRecepcion);
       const prod = String(it.name||'').replace(/"/g,'""');
-      csv += anio+';'+mes+';'+area+';'+fmtD(fechaExp)+';'+o.rest+';"'+prod+'";'+loteVal+';'+qtyVal+';'+ts+';'+tr+';TRANSPORTE\n';
+      csv += anio+';'+mes+';'+area+';'+fmtD(fechaExp)+';'+o.rest+(o.turno==='TARDE'?' TARDE':'')+';"'+prod+'";'+loteVal+';'+qtyVal+';'+ts+';'+tr+';TRANSPORTE\n';
       lines++;
     });
   });
@@ -2703,7 +2714,7 @@ function exportWhatsAppCSV(){
       const prod = String(it.name||'').replace(/"/g,'""');
       const area = it.area || '';
       const lote = '';
-      csv += anio+';'+mes+';'+area+';'+fmtD(fechaExp)+';'+(o.rest||'')+(o.planta?(' '+o.planta):'')+';"'+prod+'";'+lote+';'+qty+';'+fmtTempCSV(it.tempSalida)+';'+fmtTempCSV(it.tempRecepcion)+'\n';
+      csv += anio+';'+mes+';'+area+';'+fmtD(fechaExp)+';'+(o.rest||'')+(o.planta?(' '+o.planta):'')+(o.turno==='TARDE'?' TARDE':'')+';"'+prod+'";'+lote+';'+qty+';'+fmtTempCSV(it.tempSalida)+';'+fmtTempCSV(it.tempRecepcion)+'\n';
       lines++;
     });
   });
