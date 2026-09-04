@@ -2248,8 +2248,19 @@ function fmtDateWA(iso){
   if(p.length===3) return p[2]+'/'+p[1]+'/'+p[0];
   return iso;
 }
-function nombreCortoWA(name, area){
+function quitarNombreRest(name, rest){
   let n = String(name||'').trim();
+  const keys = rest ? [rest] : Object.keys(RESTAURANTS_CONFIG||{});
+  keys.forEach(r=>{
+    if(!r) return;
+    const esc = r.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    n = n.replace(new RegExp('\\s*'+esc+'\\s*','ig'), ' ');
+  });
+  n = n.replace(/\s+/g,' ').replace(/\s+\)/g,')').replace(/\(\s+/g,'(').trim();
+  return n || String(name||'').trim();
+}
+function nombreCortoWA(name, area){
+  let n = quitarNombreRest(name, state.selRest);
   // Bajo HELADOS no repetir "Helado" / "Sorbete"
   if((area||'') === 'HELADOS'){
     n = n.replace(/^\s*helado\s+de\s+/i, '');
