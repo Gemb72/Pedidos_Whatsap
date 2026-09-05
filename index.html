@@ -2014,8 +2014,11 @@ function renderRestaurantes(){
             <div class="section-title">Resumen del pedido</div>
       <div style="display:flex;flex-wrap:wrap;gap:0.4rem;align-items:flex-end;margin-bottom:0.75rem">
         <div class="form-group" style="margin:0;flex:0 0 auto">
-          <label>Fecha de entrega</label>
-          <input type="date" max="2099-12-31" value="${state.deliveryDate}" onchange="state.deliveryDate=this.value;persistRestDraft()" style="width:140px;max-width:46vw">
+          <label style="font-weight:700;font-size:0.72rem;color:#57534e;letter-spacing:.04em">INDICAR FECHA DE ENTREGA</label>
+          <div style="display:flex;align-items:stretch;gap:0;border:1px solid #d6d3d1;border-radius:8px;overflow:hidden;background:#fff;width:fit-content;max-width:100%">
+            <div id="fecha-dia-preview" style="font-weight:700;font-size:0.82rem;color:#44403c;padding:0.45rem 0.55rem;min-width:5.2rem;display:flex;align-items:center;justify-content:center;background:#f5f5f4;border-right:1px solid #e7e5e4">${state.deliveryDate?soloDiaSemana(state.deliveryDate):'—'}</div>
+            <input type="date" max="2099-12-31" value="${state.deliveryDate}" onchange="state.deliveryDate=this.value;persistRestDraft();actualizarDiaEntrega(this.value)" oninput="state.deliveryDate=this.value;actualizarDiaEntrega(this.value)" style="width:158px;max-width:48vw;border:0;border-radius:0;padding:0.45rem 0.5rem;font-weight:600;font-size:0.92rem;background:#fff">
+          </div>
         </div>
         ${state.cart.length>0?`<button class="btn-confirm" style="width:auto;margin:0;min-height:36px;height:36px;padding:0.3rem 0.7rem;white-space:nowrap" onclick="submitRestOrder()">Enviar WhatsApp</button>`:''}
         ${state.cart.length?`<button type="button" class="btn-back" style="margin:0;min-height:36px;height:36px;padding:0.3rem 0.7rem;border-color:#b91c1c;color:#b91c1c;white-space:nowrap" onclick="clearRestPedido()">Borrar pedido</button>`:''}
@@ -2269,6 +2272,26 @@ function fmtDateWA(iso){
   if(p.length===3) return p[2]+'/'+p[1]+'/'+p[0];
   return iso;
 }
+
+function soloDiaSemana(iso){
+  const s = fechaConDia(iso);
+  return s ? s.split(' ')[0] : '';
+}
+function actualizarDiaEntrega(iso){
+  const el = document.getElementById('fecha-dia-preview');
+  if(!el) return;
+  el.textContent = iso ? soloDiaSemana(iso) : '—';
+}
+
+function fechaConDia(iso){
+  if(!iso) return '';
+  const p = String(iso).split('-');
+  if(p.length!==3) return iso;
+  const dt = new Date(Number(p[0]), Number(p[1])-1, Number(p[2]));
+  if(isNaN(dt.getTime())) return fmtDateWA(iso);
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  return dias[dt.getDay()] + ' ' + p[2]+'/'+p[1]+'/'+p[0];
+}
 function quitarNombreRest(name, rest){
   let n = String(name||'').trim();
   const keys = rest ? [rest] : Object.keys(RESTAURANTS_CONFIG||{});
@@ -2294,7 +2317,7 @@ function nombreCortoWA(name, area){
 }
 function buildWhatsAppOrderText(){
   const rest = state.selRest || '';
-  const fecha = fmtDateWA(state.deliveryDate);
+  const fecha = fechaConDia(state.deliveryDate);
   const planta = state.selRest==='METROPOLIS' && state.metropolisPlanta ? ('\nPlanta: '+state.metropolisPlanta) : '';
   const tarde = state.entregaTarde ? '. - POR LA TARDE' : '';
   let lines = [];
@@ -2331,7 +2354,12 @@ function buildWhatsAppOrderText(){
   return lines.join('\n').trim();
 }
 function submitRestOrder(){
-  if(!state.deliveryDate){const d=document.querySelector('input[type="date"]');if(d){d.style.borderColor='var(--danger)';d.focus();}return;}
+  if(!state.deliveryDate){
+    const d=document.querySelector('input[type="date"]');
+    if(d){d.style.borderColor='#b91c1c';d.style.boxShadow='0 0 0 3px rgba(185,28,28,.25)';d.focus();}
+    alert('Indicá la fecha de entrega.');
+    return;
+  }
   if(!state.cart || !state.cart.length){ alert('No hay productos en el pedido'); return; }
   if(state.selRest==='METROPOLIS' && !state.metropolisPlanta){ alert('Elegí la planta'); return; }
   const text = buildWhatsAppOrderText();
