@@ -847,12 +847,25 @@ function getArchiveReminder(){
   return 'Hay despachos desde el '+fmtD(oldest)+' (hace '+ARCHIVE_REMINDER_DAYS+'+ días) sin archivar. Entrá a APPCC y descargá el CSV.';
 }
 function isPozzetti(item){return (item.name||'').toLowerCase().includes('(pozzetti)');}
+const DOWNLOAD_INCLUDE = ["Aceite de cayena", "Aceite de mostaza", "Aceite de periquito", "Aceite de pimenton LIBRARY", "Ajo blanco de esparragos", "Bandeja de rollito (PATO)", "Berenjena asada", "Beurre blanc hinojo", "Cachopo PARAGUAS", "Cachopo QUINTIN", "Caldo de manitas METROPOLIS", "Caldo de manitas PARAGUAS", "Caldo de mariscos", "Caldo de mariscos METROPOLIS", "Caldo de pollo / gallina", "Cebolla pochada", "Cebolla pochada METROPOLIS", "Cebollitas glaseadas LIBRARY", "Chapatita Blanca (Precocido)", "Chapatita de aceituna (Precocido)", "Chimichurri (tupper 3 litros)", "Cochinillo", "Cochinita", "Coulis de frutos rojos LIBRARY", "Crema de calabaza LIBRARY", "Crema de chirivia", "Crema de maiz", "Crema tupinambo LIBRARY", "Cremoso foie-gras", "Croquetas de carabinero", "Croquetas de cecina LIBRARY", "Croquetas fabada", "Croquetas oricio", "Emulsion de aceituna verde", "Ensaladilla", "Ensaladilla METROPOLIS", "Escabeche boletus", "Escalopines", "Esparrago cocido LIBRARY", "Farsa de bogavante y centolla LIBRARY", "Farsa de bogavante y centolla METROPOLIS", "Farsa de cebolla a la crema", "Flauta (Precocido)", "Flor de alcachofa (caja)", "Fondo de alcachofa (caja)", "Fumet de pescado", "Gamba roja", "Gazpacho de Acai", "Gazpacho de sandia", "Gazpacho de sandia LIBRARY", "Gazpacho de tomate raff LIBRARY", "Gazpacho de tomate, jalapeño y hierbas", "Hamburguesa de rabo de toro 100g. LIBRARY", "Hamburguesa de rabo de toro 50g. LIBRARY", "Hamburguesa de rabo de toro AUREA (bolsa de 10u)", "Hamburguesa de rabo de toro tenconten (bolsa de 10u)", "Helado de avellana (Pozzetti)", "Helado de avellana (Tupper)", "Helado de café (Pozzetti)", "Helado de caramelo (Tupper)", "Helado de chocolate amargo (Tupper)", "Helado de chocolate blanco straciatella (Tupper)", "Helado de chocolate con leche (Pozzetti)", "Helado de chocolate con leche (Tupper)", "Helado de chocolate oreo (Tupper)", "Helado de chocolate trufado (Tupper)", "Helado de coco (Pozzetti)", "Helado de coco (Tupper)", "Helado de dulce de leche (Tupper)", "Helado de gianduja (Pozzetti)", "Helado de jengibre (Pozzetti)", "Helado de mascarpone (Pozzetti)", "Helado de mascarpone con higos (Pozzetti)", "Helado de mascarpone con higos (Tupper)", "Helado de menta (Tupper)", "Helado de pistacho (Pozzetti)", "Helado de pistacho (Tupper)", "Helado de platano (Pozzetti)", "Helado de te (Tupper)", "Helado de turrón (Tupper)", "Helado de vainilla (Pozzetti)", "Helado de vainilla (Tupper)", "Helado de vainilla con nueces (Tupper)", "Helado de yogurt griego (Pozzetti)", "Helado de yogurt griego (Tupper)", "Humus", "Jarrete lacado LIBRARY", "Jarrete lacado PARAGUAS", "Jugo de ternera", "Jugo de ternera METROPOLIS", "Leche de tigre frutos rojos", "Manitas", "Manitas METROPOLIS", "Masa de nam Injera", "Masa de pizza", "Masa de yuca", "Masa rabo de toro PARAGUAS", "Masa rabo de toro QUINTIN", "Paletilla cordero c/huacatay AMAZONICO", "Paletilla cordero lechal lacada PARAGUAS", "Pan de Maiz (Precocido)", "Pan de semilla (Precocido)", "Pan Payes (Precocido)", "Panecillo de Viena (Precocido)", "Patata baby confitada AMAZONICO", "Patata baston AMAZONICO", "Patata baston QUINTIN", "Patata pelada AARDE", "Patata pelada QUINTIN", "Pechuga para cesar METROPOLIS", "Piña torneada (bandeja)", "Pure de patata AMAZONICO", "Remolacha blanca cocida", "Remolacha morada cocida", "Remolacha naranja cocida", "Remolacha rosada cocida", "Salmorreta AMAZONICO", "Salpicon de mariscos LIBRARY", "Salsa agridulce de pimiento & piña", "Salsa agridulce LIBRARY", "Salsa anticuchera AMAZONICO", "Salsa bogavante", "Salsa brava", "Salsa curry AARDE", "Salsa curry AMAZONICO", "Salsa de cochinita", "Salsa de erizo", "Salsa de manitas", "Salsa de manitas METROPOLIS", "Salsa de rabo px", "Salsa de rabo px NUMA", "Salsa marinera LIBRARY", "Salsa suquet LIBRARY", "Salsa suquet METROPOLIS", "Salsa verde", "Salsa verde c/chirlas", "Setas silvestres guisadas LIBRARY", "Sonso de yuca AMAZONICO", "Sorbete de acai (Pozzetti)", "Sorbete de aguacate (Pozzetti)", "Sorbete de cereza (Pozzetti)", "Sorbete de frambuesa (Pozzetti)", "Sorbete de gorila (Pozzetti)", "Sorbete de limon (Tupper)", "Sorbete de limón (Pozzetti)", "Sorbete de mandarina (Pozzetti)", "Sorbete de mandarina (Tupper)", "Sorbete de mango (Pozzetti)", "Sorbete de mango (Tupper)", "Sorbete de maracuya (Pozzetti)", "Sorbete de maracuya (Tupper)", "Tomate seco con albahaca (Precocido)", "Tortita de aceite (precocido)", "Verdura wok", "Vichyssoise AARDE", "Vinagreta de frambuesa", "Vinagreta de tomate", "Yema cocida"];
+
+function normDescarga(s){
+  return String(s||'').replace(/\s*\(C\)\s*$/i,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+}
+function includeInDescarga(name){
+  if(!name) return false;
+  if((name||'').toLowerCase().includes('alcachofa')) return false; // van al panel de alcachofas
+  const k = normDescarga(name);
+  return (DOWNLOAD_INCLUDE||[]).some(x => normDescarga(x) === k);
+}
+
 function skipAPPCC(item){
   if(!item) return true;
-  if(item.area === 'OTROS') return true;
+  if(item.area === 'OTROS' || item.area === 'ALCACHOFAS') return true;
+  if((item.name||'').toLowerCase().includes('alcachofa')) return true;
+  if(!includeInDescarga(item.name)) return true;
   const n = (item.name||'').toLowerCase().trim();
-  // Pescados de pedido habitual que no entran en registro de expedición
-  if(n === 'corvina (c)' || n === 'merluza (c)' || n === 'lubina (c)') return true;
+  if(n.indexOf('corvina')>=0 || n.indexOf('merluza')>=0 || n.indexOf('lubina')>=0) return true;
   return false;
 }
 function isAutoLote(item){
@@ -2469,8 +2482,14 @@ function renderAPPCC(){
   const rows = [];
   disp.forEach(o => {
     (o.items||[]).forEach(it => {
+      if(skipAPPCC(it)) return;
       const qtyVal = Number(it.dispatchedQty != null ? it.dispatchedQty : it.qty) || 0;
       if(qtyVal <= 0) return;
+      if(it.tempSalida == null || it.tempSalida === ''){
+        const t = generateTemperatures(it.name, o.rest, it.area, o.deliveryDate);
+        it.tempSalida = t.tempSalida;
+        it.tempRecepcion = t.tempRecepcion;
+      }
       rows.push({
         id: o.id,
         rest: o.rest,
@@ -2478,34 +2497,48 @@ function renderAPPCC(){
         received: o.receivedDate||'',
         planta: o.planta||'',
         name: it.name,
-        area: it.area||'',
-        qty: qtyVal
+        area: getProductArea(it.name, it.area),
+        qty: qtyVal,
+        lote: '',
+        tempSalida: it.tempSalida,
+        tempRecepcion: it.tempRecepcion
       });
     });
   });
   rows.sort((a,b)=>{
-    const da=a.received||a.para||'';
-    const db=b.received||b.para||'';
+    const da=a.para||a.received||'';
+    const db=b.para||b.received||'';
     if(db!==da) return db.localeCompare(da);
     return (b.id||'').localeCompare(a.id||'');
   });
-  // saltar resto legacy de alcachofas en este bloque
   const alcaRows = [];
+  disp.forEach(o => {
+    (o.items||[]).forEach(it => {
+      if(!(it.name||'').toLowerCase().includes('alcachofa')) return;
+      const qtyVal = Number(it.dispatchedQty != null ? it.dispatchedQty : it.qty) || 0;
+      if(qtyVal <= 0) return;
+      const tipo = alcachofaTipo(it.name);
+      const peso = alcachofaPesoBandeja(it.name);
+      alcaRows.push({
+        id: o.id, rest: o.rest, para: o.deliveryDate, name: it.name,
+        tipo, qty: qtyVal, peso, kg: Math.round(qtyVal * peso * 100) / 100
+      });
+    });
+  });
   const restsAll = Object.keys(RESTAURANTS_CONFIG);
   const rowsF = rows.filter(r => (!state.dlRest || r.rest === state.dlRest) && matchesDateFilter(r.para, state.dlFrom, state.dlTo) && itemMatchesProduct({name:r.name}, state.dlProdSearch));
-  const alcaF = [];
+  const alcaF = alcaRows.filter(r => (!state.dlRest || r.rest === state.dlRest) && matchesDateFilter(r.para, state.dlFrom, state.dlTo) && itemMatchesProduct({name:r.name}, state.dlProdSearch));
 
   app.innerHTML=`
   <div class="nav-header">
     <button class="btn-back" onclick="navigateTo('HOME')">← Salir</button>
-    <h2>ÁREA PRIVADA</h2>
+    <h2>PANEL GENERAL DE DESCARGAS</h2>
     <div></div>
   </div>
   ${state.successMessage?`<div class="success-message"><div><strong>✓ ${state.successMessage}</strong></div><button class="success-close" onclick="state.successMessage='';render()">×</button></div>`:''}
-  <p style="font-size:0.72rem;color:var(--text-muted);margin:0 0 0.65rem">Los restaurantes no ven historial. Al confirmar el archivo se borra de la nube y de todos los dispositivos.</p>
   <div class="order-card filter-bar" style="margin-bottom:0.75rem">
-    <div class="section-title" style="margin-bottom:0.5rem">Filtro</div>
-    <div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:flex-end">
+    <div class="section-title" style="margin-bottom:0.5rem">Filtro de búsqueda</div>
+    <div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:flex-end;margin-bottom:0.25rem">
       <div class="form-group" style="margin:0">
         <label style="font-size:0.7rem">Restaurante</label>
         <select onchange="state.dlRest=this.value;render()" style="padding:0.35rem;border:1px solid var(--border);border-radius:4px">
@@ -2515,11 +2548,43 @@ function renderAPPCC(){
       </div>
       <div class="form-group" style="margin:0"><label style="font-size:0.7rem">Desde</label><input type="date" max="2099-12-31" value="${state.dlFrom||''}" onchange="state.dlFrom=this.value;render()" style="padding:0.35rem"></div>
       <div class="form-group" style="margin:0"><label style="font-size:0.7rem">Hasta</label><input type="date" max="2099-12-31" value="${state.dlTo||''}" onchange="state.dlTo=this.value;render()" style="padding:0.35rem"></div>
+      <div class="form-group" style="margin:0;min-width:160px;max-width:220px"><label style="font-size:0.7rem">Producto</label><input type="text" id="dl-prod-search" placeholder="ej. vinagreta" value="${(state.dlProdSearch||'').replace(/"/g,'&quot;')}" oninput="state.dlProdSearch=this.value;render()" style="padding:0.35rem;width:100%;border:1px solid var(--border);border-radius:4px"></div>
       <button type="button" class="btn-back" onclick="state.dlRest='';state.dlFrom='';state.dlTo='';state.dlProdSearch='';render()">Limpiar</button>
     </div>
   </div>
+  <div class="order-card" style="margin-bottom:0.75rem">
+    <div class="section-title" style="margin-bottom:0.5rem">📋 DETALLE ALCACHOFAS</div>
+    <div style="margin-bottom:0.75rem">
+      <button class="btn" style="background:#e2e8f0;color:#1e293b;border:1px solid #cbd5e1" onclick="exportOtrosCSV()">⬇ Descargar</button>
+    </div>
+    <div class="table-scroll" style="max-height:40vh;overflow:auto">
+      <table class="table-module" style="min-width:560px">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Restaurante</th>
+            <th>Tipo</th>
+            <th>Cant.</th>
+            <th>Peso band.</th>
+            <th>KG</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${alcaF.length===0?`<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:1rem">Sin alcachofas en la app</td></tr>`:
+            alcaF.map(r=>`<tr>
+              <td style="white-space:nowrap">${fmtD(r.para)}</td>
+              <td style="font-weight:700">${r.rest}</td>
+              <td style="font-weight:700;font-size:0.72rem">${r.tipo||'—'}</td>
+              <td><span class="qty-badge">${r.qty}</span></td>
+              <td style="font-size:0.75rem">${r.peso?fmtKg(r.peso):'—'}</td>
+              <td style="font-weight:700;color:#166534">${r.kg?fmtKg(r.kg):'—'}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
   <div class="order-card">
-    <div class="section-title" style="margin-bottom:0.5rem">Pedidos guardados (${disp.length})</div>
+    <div class="section-title" style="margin-bottom:0.5rem">📋 DETALLE EXPEDICIÓN</div>
     <div style="margin-bottom:0.75rem;display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center">
       <button class="btn" onclick="exportWhatsAppCSV()">⬇ Descargar CSV</button>
     </div>
@@ -2535,10 +2600,12 @@ function renderAPPCC(){
             <th>Preparaciones</th>
             <th>Lote</th>
             <th>Qty</th>
+            <th>T. salida</th>
+            <th>T. recepción</th>
           </tr>
         </thead>
         <tbody>
-          ${rowsF.length===0?`<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:1rem">Sin pedidos guardados aún. Cuando un restaurante envía por WhatsApp, queda acá.</td></tr>`:
+          ${rowsF.length===0?`<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:1rem">Sin registros aún</td></tr>`:
             rowsF.map(r=>{
               const anio = r.para ? String(r.para).slice(0,4) : '—';
               const mes = r.para ? mesNombreES(r.para) : '—';
@@ -2551,6 +2618,8 @@ function renderAPPCC(){
               <td><span class="prod-name">${r.name}</span></td>
               <td style="font-size:0.7rem;color:var(--text-muted)">—</td>
               <td style="font-weight:700">${r.qty}</td>
+              <td style="font-weight:600;font-size:0.8rem">${r.tempSalida != null && r.tempSalida !== '' ? r.tempSalida : '—'}</td>
+              <td style="font-weight:600;font-size:0.8rem">${r.tempRecepcion != null && r.tempRecepcion !== '' ? r.tempRecepcion : '—'}</td>
             </tr>`;
             }).join('')}
         </tbody>
@@ -2713,11 +2782,17 @@ function exportWhatsAppCSV(){
     const anio = fechaExp ? fechaExp.slice(0,4) : '';
     const mes = fechaExp ? mesNombreES(fechaExp) : '';
     (o.items||[]).forEach(it=>{
+      if(skipAPPCC(it)) return;
       const qty = Number(it.dispatchedQty != null ? it.dispatchedQty : it.qty) || 0;
       if(qty <= 0) return;
       if(state.dlProdSearch && !itemMatchesProduct(it, state.dlProdSearch)) return;
+      if(it.tempSalida == null || it.tempSalida === ''){
+        const t = generateTemperatures(it.name, o.rest, it.area, o.deliveryDate);
+        it.tempSalida = t.tempSalida;
+        it.tempRecepcion = t.tempRecepcion;
+      }
       const prod = String(it.name||'').replace(/\s*\(C\)\s*$/i,'').replace(/"/g,'""');
-      const area = it.area || '';
+      const area = getProductArea(it.name, it.area);
       const lote = '';
       csv += anio+';'+mes+';'+area+';'+fmtD(fechaExp)+';'+(o.rest||'')+(o.planta?(' '+o.planta):'')+(o.turno==='TARDE'?' TARDE':'')+';"'+prod+'";'+lote+';'+qty+';'+fmtTempCSV(it.tempSalida)+';'+fmtTempCSV(it.tempRecepcion)+'\n';
       lines++;
