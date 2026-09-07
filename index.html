@@ -847,7 +847,7 @@ function getArchiveReminder(){
   return 'Hay despachos desde el '+fmtD(oldest)+' (hace '+ARCHIVE_REMINDER_DAYS+'+ días) sin archivar. Entrá a APPCC y descargá el CSV.';
 }
 function isPozzetti(item){return (item.name||'').toLowerCase().includes('(pozzetti)');}
-const DOWNLOAD_INCLUDE = ["Aceite de cayena", "Aceite de mostaza", "Aceite de periquito", "Aceite de pimenton LIBRARY", "Ajo blanco de esparragos", "Bandeja de rollito (PATO)", "Berenjena asada", "Beurre blanc hinojo", "Cachopo PARAGUAS", "Cachopo QUINTIN", "Caldo de manitas METROPOLIS", "Caldo de manitas PARAGUAS", "Caldo de mariscos", "Caldo de mariscos METROPOLIS", "Caldo de pollo / gallina", "Cebolla pochada", "Cebolla pochada METROPOLIS", "Cebollitas glaseadas LIBRARY", "Chapatita Blanca (Precocido)", "Chapatita de aceituna (Precocido)", "Chimichurri (tupper 3 litros)", "Cochinillo", "Cochinita", "Coulis de frutos rojos LIBRARY", "Crema de calabaza LIBRARY", "Crema de chirivia", "Crema de maiz", "Crema tupinambo LIBRARY", "Cremoso foie-gras", "Croquetas de carabinero", "Croquetas de cecina LIBRARY", "Croquetas fabada", "Croquetas oricio", "Emulsion de aceituna verde", "Ensaladilla", "Ensaladilla METROPOLIS", "Escabeche boletus", "Escalopines", "Esparrago cocido LIBRARY", "Farsa de bogavante y centolla LIBRARY", "Farsa de bogavante y centolla METROPOLIS", "Farsa de cebolla a la crema", "Flauta (Precocido)", "Flor de alcachofa (caja)", "Fondo de alcachofa (caja)", "Fumet de pescado", "Gamba roja", "Gazpacho de Acai", "Gazpacho de sandia", "Gazpacho de sandia LIBRARY", "Gazpacho de tomate raff LIBRARY", "Gazpacho de tomate, jalapeño y hierbas", "Hamburguesa de rabo de toro 100g. LIBRARY", "Hamburguesa de rabo de toro 50g. LIBRARY", "Hamburguesa de rabo de toro AUREA (bolsa de 10u)", "Hamburguesa de rabo de toro tenconten (bolsa de 10u)", "Helado de avellana (Pozzetti)", "Helado de avellana (Tupper)", "Helado de café (Pozzetti)", "Helado de caramelo (Tupper)", "Helado de chocolate amargo (Tupper)", "Helado de chocolate blanco straciatella (Tupper)", "Helado de chocolate con leche (Pozzetti)", "Helado de chocolate con leche (Tupper)", "Helado de chocolate oreo (Tupper)", "Helado de chocolate trufado (Tupper)", "Helado de coco (Pozzetti)", "Helado de coco (Tupper)", "Helado de dulce de leche (Tupper)", "Helado de gianduja (Pozzetti)", "Helado de jengibre (Pozzetti)", "Helado de mascarpone (Pozzetti)", "Helado de mascarpone con higos (Pozzetti)", "Helado de mascarpone con higos (Tupper)", "Helado de menta (Tupper)", "Helado de pistacho (Pozzetti)", "Helado de pistacho (Tupper)", "Helado de platano (Pozzetti)", "Helado de te (Tupper)", "Helado de turrón (Tupper)", "Helado de vainilla (Pozzetti)", "Helado de vainilla (Tupper)", "Helado de vainilla con nueces (Tupper)", "Helado de yogurt griego (Pozzetti)", "Helado de yogurt griego (Tupper)", "Humus", "Jarrete lacado LIBRARY", "Jarrete lacado PARAGUAS", "Jugo de ternera", "Jugo de ternera METROPOLIS", "Leche de tigre frutos rojos", "Manitas", "Manitas METROPOLIS", "Masa de nam Injera", "Masa de pizza", "Masa de yuca", "Masa rabo de toro PARAGUAS", "Masa rabo de toro QUINTIN", "Paletilla cordero c/huacatay AMAZONICO", "Paletilla cordero lechal lacada PARAGUAS", "Pan de Maiz (Precocido)", "Pan de semilla (Precocido)", "Pan Payes (Precocido)", "Panecillo de Viena (Precocido)", "Patata baby confitada AMAZONICO", "Patata baston AMAZONICO", "Patata baston QUINTIN", "Patata pelada AARDE", "Patata pelada QUINTIN", "Pechuga para cesar METROPOLIS", "Piña torneada (bandeja)", "Pure de patata AMAZONICO", "Remolacha blanca cocida", "Remolacha morada cocida", "Remolacha naranja cocida", "Remolacha rosada cocida", "Salmorreta AMAZONICO", "Salpicon de mariscos LIBRARY", "Salsa agridulce de pimiento & piña", "Salsa agridulce LIBRARY", "Salsa anticuchera AMAZONICO", "Salsa bogavante", "Salsa brava", "Salsa curry AARDE", "Salsa curry AMAZONICO", "Salsa de cochinita", "Salsa de erizo", "Salsa de manitas", "Salsa de manitas METROPOLIS", "Salsa de rabo px", "Salsa de rabo px NUMA", "Salsa marinera LIBRARY", "Salsa suquet LIBRARY", "Salsa suquet METROPOLIS", "Salsa verde", "Salsa verde c/chirlas", "Setas silvestres guisadas LIBRARY", "Sonso de yuca AMAZONICO", "Sorbete de acai (Pozzetti)", "Sorbete de aguacate (Pozzetti)", "Sorbete de cereza (Pozzetti)", "Sorbete de frambuesa (Pozzetti)", "Sorbete de gorila (Pozzetti)", "Sorbete de limon (Tupper)", "Sorbete de limón (Pozzetti)", "Sorbete de mandarina (Pozzetti)", "Sorbete de mandarina (Tupper)", "Sorbete de mango (Pozzetti)", "Sorbete de mango (Tupper)", "Sorbete de maracuya (Pozzetti)", "Sorbete de maracuya (Tupper)", "Tomate seco con albahaca (Precocido)", "Tortita de aceite (precocido)", "Verdura wok", "Vichyssoise AARDE", "Vinagreta de frambuesa", "Vinagreta de tomate", "Yema cocida"];
+const DOWNLOAD_INCLUDE = ["Aceite de cayena", "Aceite de mostaza", "Aceite de periquito", "Aceite de pimenton LIBRARY", "Ajo blanco de esparragos", "Bandeja de rollito (PATO)", "Berenjena asada", "Beurre blanc hinojo", "Cachopo PARAGUAS", "Cachopo QUINTIN", "Caldo de manitas METROPOLIS", "Caldo de manitas PARAGUAS", "Caldo de mariscos", "Caldo de mariscos METROPOLIS", "Caldo de pollo / gallina", "Cebolla pochada", "Cebolla pochada METROPOLIS", "Cebollitas glaseadas LIBRARY", "Chimichurri (tupper 3 litros)", "Cochinillo", "Cochinita", "Coulis de frutos rojos LIBRARY", "Crema de calabaza LIBRARY", "Crema de chirivia", "Crema de maiz", "Crema tupinambo LIBRARY", "Cremoso foie-gras", "Croquetas de carabinero", "Croquetas de cecina LIBRARY", "Croquetas fabada", "Croquetas oricio", "Emulsion de aceituna verde", "Ensaladilla", "Ensaladilla METROPOLIS", "Escabeche boletus", "Escalopines", "Esparrago cocido LIBRARY", "Farsa de bogavante y centolla LIBRARY", "Farsa de bogavante y centolla METROPOLIS", "Farsa de cebolla a la crema", "Flor de alcachofa (caja)", "Fondo de alcachofa (caja)", "Fumet de pescado", "Gamba roja", "Gazpacho de Acai", "Gazpacho de sandia", "Gazpacho de sandia LIBRARY", "Gazpacho de tomate raff LIBRARY", "Gazpacho de tomate, jalapeño y hierbas", "Hamburguesa de rabo de toro 100g. LIBRARY", "Hamburguesa de rabo de toro 50g. LIBRARY", "Hamburguesa de rabo de toro AUREA (bolsa de 10u)", "Hamburguesa de rabo de toro tenconten (bolsa de 10u)", "Helado de avellana (Pozzetti)", "Helado de avellana (Tupper)", "Helado de café (Pozzetti)", "Helado de caramelo (Tupper)", "Helado de chocolate amargo (Tupper)", "Helado de chocolate blanco straciatella (Tupper)", "Helado de chocolate con leche (Pozzetti)", "Helado de chocolate con leche (Tupper)", "Helado de chocolate oreo (Tupper)", "Helado de chocolate trufado (Tupper)", "Helado de coco (Pozzetti)", "Helado de coco (Tupper)", "Helado de dulce de leche (Tupper)", "Helado de gianduja (Pozzetti)", "Helado de jengibre (Pozzetti)", "Helado de mascarpone (Pozzetti)", "Helado de mascarpone con higos (Pozzetti)", "Helado de mascarpone con higos (Tupper)", "Helado de menta (Tupper)", "Helado de pistacho (Pozzetti)", "Helado de pistacho (Tupper)", "Helado de platano (Pozzetti)", "Helado de te (Tupper)", "Helado de turrón (Tupper)", "Helado de vainilla (Pozzetti)", "Helado de vainilla (Tupper)", "Helado de vainilla con nueces (Tupper)", "Helado de yogurt griego (Pozzetti)", "Helado de yogurt griego (Tupper)", "Humus", "Jarrete lacado LIBRARY", "Jarrete lacado PARAGUAS", "Jugo de ternera", "Jugo de ternera METROPOLIS", "Leche de tigre frutos rojos", "Manitas", "Manitas METROPOLIS", "Masa de nam Injera", "Masa de pan nam", "Masa de pizza", "Masa de yuca", "Masa rabo de toro PARAGUAS", "Masa rabo de toro QUINTIN", "Paletilla cordero c/huacatay AMAZONICO", "Paletilla cordero lechal lacada LIBRARY", "Paletilla cordero lechal lacada PARAGUAS", "Patata baby confitada AMAZONICO", "Patata baston AMAZONICO", "Patata baston QUINTIN", "Patata pelada AARDE", "Patata pelada QUINTIN", "Pechuga para cesar LIBRARY", "Pechuga para cesar METROPOLIS", "Pisto LIBRARY", "Piña torneada (bandeja)", "Polvo de ajo", "Poularda achiote LIBRARY", "Pure de patata AMAZONICO", "Pure de patata LIBRARY", "Remolacha blanca cocida", "Remolacha morada cocida", "Remolacha naranja cocida", "Remolacha rosada cocida", "Roast beef LIBRARY", "Salmorreta AMAZONICO", "Salpicon de mariscos LIBRARY", "Salsa agridulce de pimiento & piña", "Salsa agridulce LIBRARY", "Salsa anticuchera AMAZONICO", "Salsa bogavante", "Salsa brava", "Salsa curry AARDE", "Salsa curry AMAZONICO", "Salsa de cochinita", "Salsa de erizo", "Salsa de manitas", "Salsa de manitas METROPOLIS", "Salsa de rabo px", "Salsa de rabo px NUMA", "Salsa marinera LIBRARY", "Salsa suquet LIBRARY", "Salsa suquet METROPOLIS", "Salsa verde", "Salsa verde c/chirlas", "Setas silvestres guisadas LIBRARY", "Sonso de yuca AMAZONICO", "Sorbete de acai (Pozzetti)", "Sorbete de aguacate (Pozzetti)", "Sorbete de cereza (Pozzetti)", "Sorbete de frambuesa (Pozzetti)", "Sorbete de frambuesa (Tupper)", "Sorbete de gorila (Pozzetti)", "Sorbete de gorila (Tupper)", "Sorbete de limon (Tupper)", "Sorbete de limón (Pozzetti)", "Sorbete de mandarina (Pozzetti)", "Sorbete de mandarina (Tupper)", "Sorbete de mango (Pozzetti)", "Sorbete de mango (Tupper)", "Sorbete de maracuya (Pozzetti)", "Sorbete de maracuya (Tupper)", "Verdura wok", "Vichyssoise AARDE", "Vinagreta de frambuesa", "Vinagreta de tomate", "Yema cocida"];
 
 function normDescarga(s){
   return String(s||'').replace(/\s*\(C\)\s*$/i,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
@@ -2331,7 +2331,7 @@ function buildWhatsAppOrderText(){
     if(!byArea[a]) byArea[a]=[];
     byArea[a].push(i);
   });
-  const orderAreas = ['COCINA','HELADOS','PANADERIA','OTROS'];
+  const orderAreas = ['COCINA','HELADOS','HELADOS+','PANADERIA','ALCACHOFAS','CARNES+','OTROS'];
   orderAreas.forEach(a=>{
     if(!byArea[a]||!byArea[a].length) return;
     lines.push('*'+a+'*');
@@ -2547,9 +2547,10 @@ function renderAPPCC(){
       if(qtyVal <= 0) return;
       const tipo = alcachofaTipo(it.name);
       const peso = alcachofaPesoBandeja(it.name);
+      const bandejas = alcachofaBandejas(qtyVal);
       alcaRows.push({
         id: o.id, rest: o.rest, para: o.deliveryDate, name: it.name,
-        tipo, qty: qtyVal, peso, kg: Math.round(qtyVal * peso * 100) / 100
+        tipo, qty: bandejas, peso, kg: Math.round(bandejas * peso * 100) / 100
       });
     });
   });
@@ -2592,7 +2593,7 @@ function renderAPPCC(){
             <th>Fecha</th>
             <th>Restaurante</th>
             <th>Tipo</th>
-            <th>Cant.</th>
+            <th>Bandejas</th>
             <th>Peso band.</th>
             <th>KG</th>
           </tr>
@@ -2724,6 +2725,9 @@ function alcachofaPesoBandeja(name){
   if(tipo === 'FONDO') return 0.75;
   return 0;
 }
+function alcachofaBandejas(cajas){
+  return (Number(cajas)||0) * 4;
+}
 function fmtKg(n){
   const x = Math.round(Number(n)*100)/100;
   return String(x).replace('.', ',');
@@ -2744,15 +2748,16 @@ function exportOtrosCSV(){
       if(q <= 0) return;
       const tipo = alcachofaTipo(it.name);
       const peso = alcachofaPesoBandeja(it.name);
-      const kg = Math.round(q * peso * 100) / 100;
+      const bandejas = alcachofaBandejas(q);
+      const kg = Math.round(bandejas * peso * 100) / 100;
       detailRows.push({
         fecha: fmtD(o.deliveryDate),
         rest: o.rest,
-        tipo, q, peso, kg
+        tipo, q: bandejas, peso, kg
       });
       if(!resumen[o.rest]) resumen[o.rest] = { FLOR:{qty:0,kg:0}, FONDO:{qty:0,kg:0}, OTRO:{qty:0,kg:0} };
       const bucket = resumen[o.rest][tipo] || resumen[o.rest].OTRO;
-      bucket.qty += q;
+      bucket.qty += bandejas;
       bucket.kg += kg;
     });
   });
