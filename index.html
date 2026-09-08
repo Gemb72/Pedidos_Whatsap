@@ -2795,7 +2795,19 @@ function exportOtrosCSV(){
 
   const stamp = new Date().toISOString().slice(0,10);
   downloadCSVFile(csv, 'ALCACHOFAS_'+stamp+'.csv');
-  state.successMessage = 'CSV Alcachofas listo para enviar (detalle + resumen al costado).';
+  state.orders = (state.orders||[]).map(o=>{
+    if(state.dlRest && o.rest !== state.dlRest) return o;
+    if(!matchesDateFilter(o.deliveryDate, state.dlFrom, state.dlTo)) return o;
+    const keep = (o.items||[]).filter(it => !isAlcachofaItem(it));
+    if(!keep.length) return null;
+    return Object.assign({}, o, {items: keep});
+  }).filter(Boolean);
+  localStorage.setItem('orders_whatsapp', JSON.stringify(state.orders));
+  if(sb && syncReady){
+    clearTimeout(syncTimer);
+    pushOrdersToCloud(true);
+  }
+  state.successMessage = 'CSV Alcachofas descargado. Ya no aparecen en el panel.';
   render();
 }
 
@@ -2837,10 +2849,14 @@ function exportWhatsAppCSV(){
   }
   const stamp = new Date().toISOString().slice(0,10);
   downloadCSVFile(csv, 'PEDIDOS_WHATSAPP_'+stamp+'.csv');
-  const ids = matched.map(o=>o.id);
-  addArchivedWaIds(ids);
-  const idset = new Set(ids);
-  state.orders = (state.orders||[]).filter(o => !idset.has(o.id));
+  const idset = new Set(matched.map(o=>o.id));
+  addArchivedWaIds(matched.map(o=>o.id));
+  state.orders = (state.orders||[]).map(o=>{
+    if(!idset.has(o.id)) return o;
+    const keep = (o.items||[]).filter(it => isAlcachofaItem(it));
+    if(!keep.length) return null;
+    return Object.assign({}, o, {items: keep});
+  }).filter(Boolean);
   state.pendingArchiveIds = null;
   state.pendingArchiveLines = 0;
   localStorage.setItem('orders_whatsapp', JSON.stringify(state.orders));
