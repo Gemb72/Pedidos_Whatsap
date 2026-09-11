@@ -2028,7 +2028,7 @@ function renderRestaurantes(){
         <label>Planta</label>
         <select onchange="state.metropolisPlanta=this.value;persistRestDraft()">
           <option value="" ${!state.metropolisPlanta?'selected':''}>Elegir planta...</option>
-          ${[-1,0,1,2].map(n=>`<option value="Planta ${n}" ${state.metropolisPlanta==='Planta '+n?'selected':''}>Planta ${n}</option>`).join('')}
+          ${[-1,0,1,2,5].map(n=>`<option value="Planta ${n}" ${state.metropolisPlanta==='Planta '+n?'selected':''}>Planta ${n}</option>`).join('')}
         </select>
       </div>` : ''}
       ${state.cart.length===0?`<p style="font-size:0.78rem;color:var(--text-muted)">No hay productos cargados. Volvé al catálogo para sumar ítems.</p>`:''}
