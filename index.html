@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --bg-main: #f2ebe3;
@@ -823,6 +824,19 @@ body {
   .catalog-sticky-top, .precheck-sticky{ top:100px; }
 }
 
+
+.brand-title-row{display:flex;align-items:center;justify-content:center;gap:0.55rem;}
+.home-lock-btn{width:28px;height:28px;border:none;background:transparent;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0.72;}
+.home-lock-btn svg{width:18px;height:18px;}
+.home-lock-btn:hover{opacity:1;}
+.dl-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:0.9rem 0.85rem;margin:0 0 0.75rem;}
+.dl-title{font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;font-weight:600;margin-bottom:0.45rem;}
+.dl-btn{border:none;border-radius:12px;padding:0.55rem 0.8rem;font-weight:600;cursor:pointer;}
+.dl-btn.dark{background:#141414;color:#fff;}
+.dl-btn.gold{background:#8b1a2b;color:#fff;}
+.pin-box{max-width:360px;margin:1.5rem auto;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1rem;}
+.pin-box input{width:100%;padding:0.7rem;border:1px solid var(--border);border-radius:10px;font-size:1rem;}
+
 </style>
 </head>
 <body>
@@ -871,7 +885,14 @@ let state = {
   orderNote: '',
   metropolisPlanta: '',
   successMessage: '',
-  lockedRest: ''
+  lockedRest: '',
+  view: 'PEDIDO',
+  authDescargas: false,
+  orders: [],
+  dlRest: '',
+  dlFrom: '',
+  dlTo: '',
+  dlProd: ''
 };
 
 function fmtD(d) {
@@ -1241,6 +1262,7 @@ function submitRestOrder(){
   if(!state.cart || !state.cart.length){ alert('No hay productos en el pedido'); return; }
   if(state.selRest==='METROPOLIS' && !state.metropolisPlanta){ alert('Elegí la planta'); return; }
   const text = buildWhatsAppOrderText();
+  guardarPedidoParaDescarga();
   const url = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(text);
   window.open(url, '_blank');
   state.cart=[];
@@ -1270,7 +1292,9 @@ function render() {
   if (oldFloat) oldFloat.remove();
 
   app.innerHTML = '';
-  if (!state.authRest) {
+  if (state.view === 'DESCARGAS') {
+    renderDescargas();
+  } else if (!state.authRest) {
     renderRestaurantSelector();
   } else {
     renderRestaurantCatalog();
@@ -1295,7 +1319,10 @@ function renderRestaurantSelector() {
   
   app.innerHTML = `
   <div class="app-header">
-    <h1 class="brand-title">Pedidos</h1>
+    <div class="brand-title-row">
+      <button type="button" class="home-lock-btn" onclick="openDescargas()" aria-label="Área restringida"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+      <h1 class="brand-title">Pedidos</h1>
+    </div>
     <p class="brand-subtitle">Vía WhatsApp · Zonas</p>
     <div class="home-gold-line" aria-hidden="true"></div>
   </div>
@@ -1605,6 +1632,192 @@ if(state.lockedRest){
   try{ loadRestDraft(state.lockedRest); }catch(e){}
 }
 render();
+
+const DOWNLOAD_INCLUDE = ["Aceite de cayena", "Aceite de mostaza", "Aceite de periquito", "Aceite de pimenton LIBRARY", "Ajo blanco de esparragos", "Bandeja de rollito (PATO)", "Berenjena asada", "Beurre blanc hinojo", "Cachopo PARAGUAS", "Cachopo QUINTIN", "Caldo de atun AARDE (bolsa 2 litros)", "Caldo de manitas METROPOLIS", "Caldo de manitas PARAGUAS", "Caldo de marisco AARDE (bolsa 2 litros)", "Caldo de mariscos", "Caldo de mariscos METROPOLIS", "Caldo de pato AARDE (bolsa 2 litros)", "Caldo de pixin AARDE (bolsa 2 litros)", "Caldo de pollo / gallina", "Callos", "Cebolla pochada", "Cebolla pochada METROPOLIS", "Cebollitas glaseadas LIBRARY", "Chimichurri (tupper 3 litros)", "Cochinillo", "Cochinita", "Coulis de frutos rojos LIBRARY", "Crema de calabaza LIBRARY", "Crema de chirivia", "Crema de maiz", "Crema tupinambo LIBRARY", "Cremoso foie-gras", "Croquetas de carabinero", "Croquetas de cecina LIBRARY", "Croquetas fabada", "Croquetas oricio", "Emulsion de aceituna verde", "Ensaladilla", "Ensaladilla METROPOLIS", "Escabeche boletus", "Escalopines", "Esparrago cocido LIBRARY", "Farsa de bogavante y centolla LIBRARY", "Farsa de bogavante y centolla METROPOLIS", "Farsa de cebolla a la crema", "Flor de alcachofa (caja)", "Fondo de alcachofa (caja)", "Fumet de pescado", "Gamba roja", "Gazpacho de Acai", "Gazpacho de sandia", "Gazpacho de sandia LIBRARY", "Gazpacho de tomate raff LIBRARY", "Gazpacho de tomate, jalapeño y hierbas", "Hamburguesa de rabo de toro 100g. LIBRARY", "Hamburguesa de rabo de toro 50g. LIBRARY", "Hamburguesa de rabo de toro AUREA (bolsa de 10u)", "Hamburguesa de rabo de toro tenconten (bolsa de 10u)", "Helado de avellana (Pozzetti)", "Helado de avellana (Tupper)", "Helado de café (Pozzetti)", "Helado de caramelo (Tupper)", "Helado de chocolate amargo (Tupper)", "Helado de chocolate blanco straciatella (Tupper)", "Helado de chocolate con leche (Pozzetti)", "Helado de chocolate con leche (Tupper)", "Helado de chocolate oreo (Tupper)", "Helado de chocolate trufado (Tupper)", "Helado de coco (Pozzetti)", "Helado de coco (Tupper)", "Helado de dulce de leche (Tupper)", "Helado de gianduja (Pozzetti)", "Helado de jengibre (Pozzetti)", "Helado de mascarpone (Pozzetti)", "Helado de mascarpone con higos (Tupper)", "Helado de menta (Tupper)", "Helado de pistacho (Pozzetti)", "Helado de pistacho (Tupper)", "Helado de platano (Pozzetti)", "Helado de te (Tupper)", "Helado de turrón (Tupper)", "Helado de vainilla (Pozzetti)", "Helado de vainilla (Tupper)", "Helado de vainilla con nueces (Tupper)", "Helado de yogurt griego (Pozzetti)", "Helado de yogurt griego (Tupper)", "Humus", "Jarrete lacado LIBRARY", "Jarrete lacado PARAGUAS", "Jugo de ternera", "Jugo de ternera METROPOLIS", "Leche de tigre frutos rojos", "Manitas", "Manitas METROPOLIS", "Masa de nam", "Masa de nam Injera", "Masa de yuca", "Masa pizza", "Masa rabo de toro PARAGUAS", "Masa rabo de toro QUINTIN", "Paletilla cordero c/huacatay AMAZONICO", "Paletilla cordero lechal lacada LIBRARY", "Paletilla cordero lechal lacada PARAGUAS", "Patata baby confitada AMAZONICO", "Patata baston AMAZONICO", "Patata baston QUINTIN", "Patata pelada AARDE", "Patata pelada QUINTIN", "Pechuga para cesar LIBRARY", "Pechuga para cesar METROPOLIS", "Pisto LIBRARY", "Piña torneada (bandeja)", "Polvo de ajo", "Pure de patata AMAZONICO", "Pure de patata LIBRARY", "Roast beef LIBRARY", "Salmorreta AMAZONICO", "Salpicon de mariscos LIBRARY", "Salsa agridulce de pimiento & piña", "Salsa agridulce LIBRARY", "Salsa anticuchera AMAZONICO", "Salsa bogavante", "Salsa brava", "Salsa curry AARDE", "Salsa curry AMAZONICO", "Salsa de cochinita", "Salsa de erizo", "Salsa de manitas", "Salsa de manitas METROPOLIS", "Salsa de rabo px", "Salsa de rabo px NUMA", "Salsa marinera LIBRARY", "Salsa suquet LIBRARY", "Salsa suquet METROPOLIS", "Salsa verde", "Salsa verde c/chirlas", "Setas silvestres guisadas LIBRARY", "Sonso de yuca AMAZONICO", "Sorbete de acai (Pozzetti)", "Sorbete de aguacate (Pozzetti)", "Sorbete de cereza (Pozzetti)", "Sorbete de frambuesa (Pozzetti)", "Sorbete de frambuesa (Tupper)", "Sorbete de gorila (Pozzetti)", "Sorbete de gorila (Tupper)", "Sorbete de limon (Tupper)", "Sorbete de limón (Pozzetti)", "Sorbete de mandarina (Pozzetti)", "Sorbete de mandarina (Tupper)", "Sorbete de mango (Pozzetti)", "Sorbete de mango (Tupper)", "Sorbete de maracuya (Pozzetti)", "Sorbete de maracuya (Tupper)", "Verdura wok", "Vichyssoise AARDE", "Vinagreta de frambuesa", "Vinagreta de tomate", "Yema cocida"];
+const DESCARGAS_PIN = 'PARAGUAS@1';
+const SUPABASE_URL = 'https://pxtyrdpqwupneotyjvpp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4dHlyZHBxd3VwbmVvdHlqdnBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDk4NzAsImV4cCI6MjEwMTg4NTg3MH0.XlYjuhYhw-UXJr3YYrPd_MQ9Jpl7L0Y8ZuwbwY_c980';
+const LS_ORDERS = 'wa_historial_v1';
+let sb = null;
+let syncReady = false;
+
+function normDesc(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
+function includeInDescarga(name){if(!name)return false;if(normDesc(name).includes('alcachofa'))return false;const k=normDesc(name);return (DOWNLOAD_INCLUDE||[]).some(x=>normDesc(x)===k);}
+function isAlcachofaItem(it){return !!(it && normDesc(it.name).includes('alcachofa'));}
+function skipExpedicion(it){if(!it)return true;if(isAlcachofaItem(it))return true;if(it.area==='OTROS'||it.area==='BEBIDAS'||it.area==='POSTRES')return true;if(!includeInDescarga(it.name))return true;const n=normDesc(it.name);if(n.includes('corvina')||n.includes('merluza')||n.includes('lubina'))return true;return false;}
+function isAutoLoteWA(it){const n=normDesc(it&&it.name);return n.includes('(pozzetti)')||n.includes('bandeja de rollito')||n.includes('helado de te')||n.includes('helado de dulce de leche')||n.includes('chusco (horneado)');}
+function mesNombreES(iso){const meses=['','ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];const m=parseInt(String(iso||'').split('-')[1],10);return meses[m]||'';}
+function zonaDe(rest,name,area){const map=(typeof WA_GRUPO_POR_REST!=='undefined'&&WA_GRUPO_POR_REST[rest])||{};return map[name]||waGrupo(name,area);}
+function loadOrdersLocal(){try{state.orders=JSON.parse(localStorage.getItem(LS_ORDERS)||'[]')||[];}catch(e){state.orders=[];}}
+function saveOrdersLocal(){try{localStorage.setItem(LS_ORDERS, JSON.stringify(state.orders||[]));}catch(e){}}
+function mergeOrders(a,b){const map={};(a||[]).concat(b||[]).forEach(o=>{if(!o||!o.id)return;map[o.id]=o;});return Object.values(map).sort((x,y)=>String(y.createdAt||'').localeCompare(String(x.createdAt||'')));}
+async function pullOrders(){
+  if(!sb)return;
+  const {data,error}=await sb.from('registros_pedidos').select('orders').eq('id',1).maybeSingle();
+  if(error)throw error;
+  const cloud=(data&&data.orders)||[];
+  state.orders=mergeOrders(state.orders, cloud);
+  saveOrdersLocal();
+}
+async function pushOrders(){
+  if(!sb)return false;
+  const payload=state.orders||[];
+  const {error}=await sb.from('registros_pedidos').upsert({id:1, orders:payload},{onConflict:'id'});
+  if(error)throw error;
+  return true;
+}
+async function initHistorialSync(){
+  loadOrdersLocal();
+  if(!window.supabase||!SUPABASE_URL)return;
+  try{
+    sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    await Promise.race([pullOrders(), new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))]);
+    syncReady=true;
+  }catch(e){
+    syncReady=false;
+    console.warn(e);
+  }
+}
+function openDescargas(){state.view='DESCARGAS';state.authDescargas=false;state.successMessage='';render();}
+function salirDescargas(){state.view='PEDIDO';state.authDescargas=false;render();}
+function loginDescargas(){const inp=document.getElementById('dl-pin');const pin=(inp&&inp.value||'').trim();if(pin.toLowerCase()===DESCARGAS_PIN.toLowerCase()){state.authDescargas=true;render();}else if(inp){inp.value='';inp.placeholder='Contraseña incorrecta';inp.style.borderColor='#b91c1c';}}
+function matchesDl(o){
+  if(state.dlRest && o.rest!==state.dlRest)return false;
+  if(state.dlFrom && (o.deliveryDate||'')<state.dlFrom)return false;
+  if(state.dlTo && (o.deliveryDate||'')>state.dlTo)return false;
+  return true;
+}
+function itemMatchProd(name){const q=normDesc(state.dlProd);if(!q)return true;return normDesc(name).includes(q);}
+function guardarPedidoParaDescarga(){
+  const items=(state.cart||[]).filter(i=>Number(i.qty)>0).map(i=>({name:i.name, area:i.area||'', qty:Number(i.qty)||0}));
+  if(!items.length)return;
+  const order={
+    id:'WA-'+Date.now().toString(36).toUpperCase(),
+    rest:state.selRest,
+    deliveryDate:state.deliveryDate,
+    turno:state.entregaTarde?'TARDE':'',
+    planta:state.metropolisPlanta||'',
+    note:state.orderNote||'',
+    createdAt:new Date().toISOString(),
+    items:items
+  };
+  state.orders=mergeOrders([order], state.orders);
+  saveOrdersLocal();
+  pushOrders().catch(()=>{});
+}
+function downloadCSVFile(csv,filename){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);}
+function buildExpedicionCSV(orders){
+  let csv='AÑO;MES;AREA;FECHA EXP;RESTAURANTE;PREPARACIONES;LOTE;QTY;T.SALIDA;T.RECEPCION;RESPONSABLE\n';
+  let lines=0;
+  orders.forEach(o=>{(o.items||[]).forEach(it=>{
+    if(skipExpedicion(it))return;
+    if(!itemMatchProd(it.name))return;
+    const fecha=o.deliveryDate||'';
+    const area=zonaDe(o.rest,it.name,it.area);
+    const lote=isAutoLoteWA(it)?fmtD(fecha):'';
+    const rest=o.rest+(o.turno==='TARDE'?' TARDE':'')+(o.planta?(' PLANTA '+o.planta):'');
+    const prod=String(it.name||'').replace(/"/g,'""');
+    csv+=fecha.slice(0,4)+';'+mesNombreES(fecha)+';'+area+';'+fmtD(fecha)+';'+rest+';"'+prod+'";'+lote+';'+it.qty+';;;WHATSAPP\n';
+    lines++;
+  });});
+  return {csv,lines};
+}
+function alcachofaTipo(name){const n=normDesc(name);if(n.includes('flor'))return 'FLOR';if(n.includes('fondo'))return 'FONDO';return 'OTRO';}
+function fmtKg(n){return String(Math.round(Number(n)*100)/100).replace('.',',');}
+function buildAlcachofasCSV(orders){
+  const detail=[];const resumen={};
+  orders.forEach(o=>{(o.items||[]).forEach(it=>{
+    if(!isAlcachofaItem(it))return;
+    if(!itemMatchProd(it.name))return;
+    const tipo=alcachofaTipo(it.name);
+    const peso=tipo==='FLOR'?1.25:(tipo==='FONDO'?0.75:0);
+    const bandejas=(Number(it.qty)||0)*4;
+    const kg=Math.round(bandejas*peso*100)/100;
+    detail.push({fecha:fmtD(o.deliveryDate),rest:o.rest,tipo,q:bandejas,peso,kg});
+    if(!resumen[o.rest])resumen[o.rest]={FLOR:{qty:0,kg:0},FONDO:{qty:0,kg:0}};
+    const b=resumen[o.rest][tipo]||resumen[o.rest].FONDO;
+    b.qty+=bandejas;b.kg+=kg;
+  });});
+  const summary=[];
+  Object.keys(resumen).sort().forEach(rest=>['FLOR','FONDO'].forEach(tipo=>{const b=resumen[rest][tipo];if(b&&b.qty>0)summary.push({rest,tipo,q:b.qty,kg:Math.round(b.kg*100)/100});}));
+  let csv='DETALLE PEDIDOS;;;;;;;RESUMEN X TIPO;;;\nFecha;Restaurante;Tipo;Cantidad;Peso bandeja;KG;;Restaurante;Tipo;Cantidad;KG\n';
+  const n=Math.max(detail.length,summary.length);
+  for(let i=0;i<n;i++){let left=';;;;;;;';if(i<detail.length){const d=detail[i];left=`${d.fecha};${d.rest};${d.tipo};${d.q};${fmtKg(d.peso)};${fmtKg(d.kg)};;`;}let right='';if(i<summary.length){const s=summary[i];right=`${s.rest};${s.tipo};${s.q};${fmtKg(s.kg)}`;}csv+=left+right+'\n';}
+  return {csv,lines:detail.length};
+}
+function quitarDescargados(pred){
+  state.orders=(state.orders||[]).map(o=>{
+    if(!matchesDl(o))return o;
+    const keep=(o.items||[]).filter(it=>!pred(it));
+    if(!keep.length)return null;
+    return Object.assign({},o,{items:keep});
+  }).filter(Boolean);
+  saveOrdersLocal();
+  pushOrders().catch(()=>{});
+}
+function descargarExpedicion(){
+  const orders=(state.orders||[]).filter(matchesDl);
+  const built=buildExpedicionCSV(orders);
+  if(!built.lines){alert('No hay líneas de expedición con ese filtro.');return;}
+  if(!confirm('Se descarga lo filtrado y se quita de la app. ¿Seguir?'))return;
+  downloadCSVFile(built.csv,'EXPEDICION_'+new Date().toISOString().slice(0,10)+'.csv');
+  quitarDescargados(it=>!isAlcachofaItem(it)&&itemMatchProd(it.name)&&!skipExpedicion(it));
+  state.successMessage='Expedición descargada y quitada de la app.';
+  render();
+}
+function descargarAlcachofas(){
+  const orders=(state.orders||[]).filter(matchesDl);
+  const built=buildAlcachofasCSV(orders);
+  if(!built.lines){alert('No hay alcachofas con ese filtro.');return;}
+  if(!confirm('Se descarga el detalle de alcachofas y se quita de la app. ¿Seguir?'))return;
+  downloadCSVFile(built.csv,'ALCACHOFAS_'+new Date().toISOString().slice(0,10)+'.csv');
+  quitarDescargados(it=>isAlcachofaItem(it)&&itemMatchProd(it.name));
+  state.successMessage='Alcachofas descargadas y quitadas de la app.';
+  render();
+}
+function renderDescargas(){
+  if(!state.authDescargas){
+    app.innerHTML=`
+    <div class="view-nav-bar"><button type="button" class="btn-soft-back" onclick="salirDescargas()">← Salir</button><div class="nav-rest-badge"><h2 class="nav-rest-title">Descargas</h2></div></div>
+    <div class="pin-box">
+      <label style="font-size:0.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase">Contraseña</label>
+      <input id="dl-pin" type="password" placeholder="Ingresá la contraseña" autofocus onkeydown="if(event.key==='Enter')loginDescargas()">
+      <button type="button" class="dl-btn dark" style="margin-top:0.7rem;width:100%" onclick="loginDescargas()">Entrar</button>
+    </div>`;
+    return;
+  }
+  const orders=(state.orders||[]).filter(matchesDl);
+  const exp=buildExpedicionCSV(orders);
+  const alca=buildAlcachofasCSV(orders);
+  const rests=Object.keys(RESTAURANTS_CONFIG);
+  const syncTxt=syncReady?'En sync':'Solo en este celular (base pausada o sin red)';
+  app.innerHTML=`
+  <div class="view-nav-bar"><button type="button" class="btn-soft-back" onclick="salirDescargas()">← Salir</button><div class="nav-rest-badge"><h2 class="nav-rest-title">Descargas</h2></div></div>
+  ${state.successMessage?`<div class="toast-msg success"><div>${state.successMessage}</div><button type="button" class="toast-close" onclick="state.successMessage='';render()">×</button></div>`:''}
+  <div class="dl-card">
+    <div class="dl-title">Filtro</div>
+    <div style="display:flex;flex-wrap:wrap;gap:0.4rem">
+      <select onchange="state.dlRest=this.value;render()" style="flex:1;min-width:140px;padding:0.45rem;border-radius:10px;border:1px solid var(--border)">
+        <option value="">Todos</option>
+        ${rests.map(r=>`<option value="${r}" ${state.dlRest===r?'selected':''}>${r}</option>`).join('')}
+      </select>
+      <input type="date" value="${state.dlFrom||''}" onchange="state.dlFrom=this.value;render()" style="padding:0.45rem;border-radius:10px;border:1px solid var(--border)">
+      <input type="date" value="${state.dlTo||''}" onchange="state.dlTo=this.value;render()" style="padding:0.45rem;border-radius:10px;border:1px solid var(--border)">
+      <input type="text" placeholder="Producto" value="${state.dlProd||''}" oninput="state.dlProd=this.value;render()" style="flex:1;min-width:140px;padding:0.45rem;border-radius:10px;border:1px solid var(--border)">
+    </div>
+    <p style="font-size:0.72rem;color:var(--text-muted);margin:0.45rem 0 0">${syncTxt}</p>
+  </div>
+  <div class="dl-card">
+    <div class="dl-title">Detalle expedición (${exp.lines})</div>
+    <button type="button" class="dl-btn dark" onclick="descargarExpedicion()">Descargar CSV</button>
+  </div>
+  <div class="dl-card">
+    <div class="dl-title">Detalle alcachofas (${alca.lines})</div>
+    <button type="button" class="dl-btn gold" onclick="descargarAlcachofas()">Descargar CSV</button>
+  </div>`;
+}
+initHistorialSync().then(function(){if(state.view==='DESCARGAS')render();});
+
 </script>
 </body>
 </html>
