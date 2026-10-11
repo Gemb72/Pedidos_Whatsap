@@ -1717,7 +1717,7 @@ function buildExpedicionCSV(orders){
     const lote=isAutoLoteWA(it)?fmtD(fecha):'';
     const rest=o.rest+(o.turno==='TARDE'?' TARDE':'')+(o.planta?(' PLANTA '+o.planta):'');
     const prod=String(it.name||'').replace(/"/g,'""');
-    csv+=fecha.slice(0,4)+';'+mesNombreES(fecha)+';'+area+';'+fmtD(fecha)+';'+rest+';"'+prod+'";'+lote+';'+it.qty+';;;WHATSAPP\n';
+    csv+=fecha.slice(0,4)+';'+mesNombreES(fecha)+';'+area+';'+fmtD(fecha)+';'+rest+';"'+prod+'";'+lote+';'+it.qty+';;;GUSTAVO\n';
     lines++;
   });});
   return {csv,lines};
