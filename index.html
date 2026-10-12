@@ -1660,14 +1660,16 @@ async function pullOrders(){
   state.orders=mergeOrders(state.orders, cloud);
   saveOrdersLocal();
 }
-async function pushOrders(){
+async function pushOrders(replace){
   if(!sb)return false;
-  try{
-    const {data}=await sb.from('registros_pedidos').select('orders').eq('id',1).maybeSingle();
-    const cloud=(data&&data.orders)||[];
-    state.orders=mergeOrders(state.orders, cloud);
-    saveOrdersLocal();
-  }catch(e){}
+  if(!replace){
+    try{
+      const {data}=await sb.from('registros_pedidos').select('orders').eq('id',1).maybeSingle();
+      const cloud=(data&&data.orders)||[];
+      state.orders=mergeOrders(state.orders, cloud);
+      saveOrdersLocal();
+    }catch(e){}
+  }
   const {error}=await sb.from('registros_pedidos').upsert({id:1, orders:state.orders||[]},{onConflict:'id'});
   if(error)throw error;
   return true;
@@ -1814,7 +1816,7 @@ function quitarDescargados(pred){
     return Object.assign({},o,{items:keep});
   }).filter(Boolean);
   saveOrdersLocal();
-  pushOrders().catch(()=>{});
+  pushOrders(true).catch(()=>{});
 }
 function descargarExpedicion(){
   const orders=(state.orders||[]).filter(matchesDl);
@@ -1867,10 +1869,6 @@ function renderDescargas(){
       <input type="text" placeholder="Producto" value="${state.dlProd||''}" oninput="state.dlProd=this.value;render()" style="flex:1;min-width:140px;padding:0.45rem;border-radius:10px;border:1px solid var(--border)">
     </div>
     <p style="font-size:0.72rem;color:var(--text-muted);margin:0.45rem 0 0">${syncTxt}</p>
-  </div>
-  <div class="dl-card">
-    <div class="dl-title">Pedidos guardados (${(state.orders||[]).filter(matchesDl).length})</div>
-    ${(state.orders||[]).filter(matchesDl).map(o=>`<div style="border-top:1px solid #eee;padding:0.45rem 0;font-size:0.78rem"><strong>${o.rest}</strong> · ${fmtD(o.deliveryDate)}${o.turno==='TARDE'?' · TARDE':''}${o.planta?' · Planta '+o.planta:''}<br>${(o.items||[]).map(it=>it.qty+' × '+it.name).join('<br>')}</div>`).join('')||'<p style="font-size:0.78rem;color:var(--text-muted)">No hay pedidos guardados.</p>'}
   </div>
   <div class="dl-card">
     <div class="dl-title">Detalle expedición (${exp.lines})</div>
