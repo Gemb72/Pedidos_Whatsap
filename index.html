@@ -1637,20 +1637,21 @@ const DOWNLOAD_INCLUDE = ["Aceite de cayena", "Aceite de mostaza", "Aceite de pe
 const DESCARGAS_PIN = 'PARAGUAS@1';
 const SUPABASE_URL = 'https://pxtyrdpqwupneotyjvpp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4dHlyZHBxd3VwbmVvdHlqdnBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDk4NzAsImV4cCI6MjEwMTg4NTg3MH0.XlYjuhYhw-UXJr3YYrPd_MQ9Jpl7L0Y8ZuwbwY_c980';
-const LS_ORDERS = 'wa_historial_v1';
+const LS_ORDERS = 'wa_historial_v2';
 let sb = null;
 let syncReady = false;
 
 function normDesc(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
 function includeInDescarga(name){if(!name)return false;if(normDesc(name).includes('alcachofa'))return false;const k=normDesc(name);return (DOWNLOAD_INCLUDE||[]).some(x=>normDesc(x)===k);}
-function isAlcachofaItem(it){return !!(it && normDesc(it.name).includes('alcachofa'));}
+function isAlcachofaItem(it){return !!(it && (normDesc(it.name).includes('alcachofa') || String(it.area||'').toUpperCase()==='ALCACHOFAS'));}
 function skipExpedicion(it){if(!it)return true;if(isAlcachofaItem(it))return true;if(it.area==='OTROS'||it.area==='BEBIDAS'||it.area==='POSTRES')return true;if(!includeInDescarga(it.name))return true;const n=normDesc(it.name);if(n.includes('corvina')||n.includes('merluza')||n.includes('lubina'))return true;return false;}
-function isAutoLoteWA(it){const n=normDesc(it&&it.name);return n.includes('(pozzetti)')||n.includes('bandeja de rollito')||n.includes('helado de te')||n.includes('helado de dulce de leche')||n.includes('chusco (horneado)');}
+function isAutoLoteWA(it){const n=normDesc(it&&it.name);return n.includes('(pozzetti)')||n.includes('helado de te')||n.includes('helado de dulce de leche')||n.includes('chusco (horneado)');}
 function mesNombreES(iso){const meses=['','ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];const m=parseInt(String(iso||'').split('-')[1],10);return meses[m]||'';}
 function zonaDe(rest,name,area){const map=(typeof WA_GRUPO_POR_REST!=='undefined'&&WA_GRUPO_POR_REST[rest])||{};return map[name]||waGrupo(name,area);}
 function loadOrdersLocal(){try{state.orders=JSON.parse(localStorage.getItem(LS_ORDERS)||'[]')||[];}catch(e){state.orders=[];}}
 function saveOrdersLocal(){try{localStorage.setItem(LS_ORDERS, JSON.stringify(state.orders||[]));}catch(e){}}
-function mergeOrders(a,b){const map={};(a||[]).concat(b||[]).forEach(o=>{if(!o||!o.id)return;map[o.id]=o;});return Object.values(map).sort((x,y)=>String(y.createdAt||'').localeCompare(String(x.createdAt||'')));}
+function firmaPedido(o){const items=(o.items||[]).map(it=>String(it.qty)+'|'+normDesc(it.name)).sort().join(';');return [o.rest,o.deliveryDate,o.turno||'',o.planta||'',items].join('::');}
+function mergeOrders(a,b){const byId={};const byFirma={};(a||[]).concat(b||[]).forEach(o=>{if(!o||!o.id)return;const f=firmaPedido(o);const prev=byFirma[f];if(prev){if(String(o.createdAt||'')>String(prev.createdAt||'')){delete byId[prev.id];byId[o.id]=o;byFirma[f]=o;}return;}byFirma[f]=o;byId[o.id]=o;});return Object.values(byId).sort((x,y)=>String(y.createdAt||'').localeCompare(String(x.createdAt||'')));}
 async function pullOrders(){
   if(!sb)return;
   const {data,error}=await sb.from('registros_pedidos').select('orders').eq('id',1).maybeSingle();
@@ -1661,8 +1662,13 @@ async function pullOrders(){
 }
 async function pushOrders(){
   if(!sb)return false;
-  const payload=state.orders||[];
-  const {error}=await sb.from('registros_pedidos').upsert({id:1, orders:payload},{onConflict:'id'});
+  try{
+    const {data}=await sb.from('registros_pedidos').select('orders').eq('id',1).maybeSingle();
+    const cloud=(data&&data.orders)||[];
+    state.orders=mergeOrders(state.orders, cloud);
+    saveOrdersLocal();
+  }catch(e){}
+  const {error}=await sb.from('registros_pedidos').upsert({id:1, orders:state.orders||[]},{onConflict:'id'});
   if(error)throw error;
   return true;
 }
@@ -1701,14 +1707,57 @@ function guardarPedidoParaDescarga(){
     createdAt:new Date().toISOString(),
     items:items
   };
+  const firma=firmaPedido(order);
+  if((state.orders||[]).some(o=>firmaPedido(o)===firma))return;
   state.orders=mergeOrders([order], state.orders);
   saveOrdersLocal();
   pushOrders().catch(()=>{});
 }
 function downloadCSVFile(csv,filename){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);}
+function nombreDescarga(name){
+  const n=normDesc(name);
+  const MAP={
+    'aceite de cayena':'Aceite de Cayena','aceite de mostaza':'Aceite de Mostaza','aceite de periquito':'Aceite de Periquito','aceite de pimenton library':'Aceite de Pimenton LIBRARY',
+    'ajo blanco de esparragos':'Ajo blanco de Esparragos','baguettin (precocido)':'Baguettin','berenjena asada':'Berenjena asada','beurre blanc hinojo':'Beurre Blanc Hinojo',
+    'cachopo paraguas':'Cachopo PARAGUAS','cachopo quintin':'CACHOPO QUINTIN','caldo de atun aarde (bolsa 2 litros)':'Caldo de Atun AARDE','caldo de manitas metropolis':'Caldo de manitas METROPOLIS',
+    'caldo de manitas paraguas':'Caldo de manitas PARAGUAS','caldo de mariscos':'Caldo de Mariscos','caldo de marisco aarde (bolsa 2 litros)':'Caldo de mariscos AARDE','caldo de mariscos metropolis':'Caldo de Mariscos METROPOLIS',
+    'caldo de pato aarde (bolsa 2 litros)':'Caldo de pato AARDE','caldo de pixin aarde (bolsa 2 litros)':'Caldo de Pixin AARDE','caldo de pollo / gallina':'Caldo de Pollo / Gallina',
+    'cebolla pochada':'Cebolla Pochada','cebolla pochada metropolis':'Cebolla Pochada METROPOLIS','cebollitas glaseadas library':'Cebollitas glaseadas LIBRARY',
+    'chimichurri (tupper 3 litros)':'Chimichurri','chusco (horneado)':'CHUSCOS','chusco (precocido)':'CHUSCOS','cochinillo':'Cochinillo','cochinita':'Cochinita',
+    'coulis de frutos rojos library':'Coulis de frutos Rojos LIBRARY','crema de calabaza library':'Crema de calabaza LIBRARY','crema de chirivia':'Crema de Chirivia','crema de maiz':'Crema de Maiz',
+    'crema tupinambo library':'Crema Tupinambo LIBRARY','cremoso foie-gras':'Cremoso Foie-Gras','croquetas de carabinero':'Croquetas de Carabinero','croquetas de cecina library':'Croquetas de Cecina LIBRARY',
+    'croquetas fabada':'Croquetas Fabada','croquetas oricio':'Croquetas Oricio','emulsion de aceituna verde':'Emulsion de Aceituna verde','ensaladilla':'Ensaladilla','ensaladilla metropolis':'Ensaladilla METROPOLIS',
+    'escabeche boletus':'Escabeche boletus','escalopines':'Escalopines','esparrago cocido library':'Esparrago cocido LIBRARY','farsa de bogavante y centolla library':'Farsa de Bogavante y Centolla LIBRARY',
+    'farsa de bogavante y centolla metropolis':'Farsa de Bogavante y Centolla METROPOLIS','farsa de cebolla a la crema':'Farsa de cebolla a la crema','flauta (precocido)':'FLAUTA',
+    'francesilla madrileña (precocido)':'FRANCESILLA MADRILEÑA','fumet de pescado':'Fumet de pescado','gamba roja':'Gamba roja','gazpacho de acai':'Gazpacho de Acai','gazpacho de sandia':'Gazpacho de Sandia',
+    'gazpacho de sandia library':'Gazpacho de Sandia LIBRARY','gazpacho de tomate raff library':'Gazpacho de tomate RAFF LIBRARY','gazpacho de tomate, jalapeño y hierbas':'Gazpacho de tomate, jalapeño Y hierbas',
+    'hamburguesa de rabo de toro 100g. library':'Hamburguesa de Rabo de toro 100g. LIBRARY','hamburguesa de rabo de toro 50g. library':'Hamburguesa de Rabo de toro 50g. LIBRARY',
+    'hamburguesa de rabo de toro aurea (bolsa de 10u)':'Hamburguesa de Rabo de toro AUREA','hamburguesa de rabo de toro tenconten (bolsa de 10u)':'Hamburguesa de Rabo de toro TENCONTEN',
+    'humus':'Humus','jugo de ternera':'Jugo de ternera','masa de pan nam':'Masa de Pan Nam','masa de yuca':'Masa de Yuca','masa de yuca amazonico':'Masa de yuca AMAZONICO',
+    'masa pizza':'MASA PIZZA','masa de pizza':'MASA PIZZA','pan de maiz (precocido)':'PAN DE MAIZ','pan de semilla (precocido)':'PAN DE SEMILLAS','pan de semilla (horneado)':'PAN DE SEMILLAS',
+    'pan integral (precocido)':'PAN INTEGRAL','pan payes (horneado)':'PAN DE PAYES','panecillo de viena (precocido)':'PAN / PANECILLO DE VIENA','chapatita blanca (precocido)':'PAN CHAPATA/CHAPATITA BLANCA',
+    'chapatita de aceituna (precocido)':'PAN CHAPATA / CHAPATITA DE ACEITUNA','tomate seco con albahaca (precocido)':'PAN DE TOMATE SECO CON ALBAHACA','tortita de aceite (precocido)':'TORTITA DE ACEITE',
+    'patata baby confitada amazonico':'Patata Baby CONFITADA Amazonico','patata baston amazonico':'Patata Baston AMAZONICO','patata baston quintin':'Patata Baston QUINTIN',
+    'patata pelada aarde':'Patata Pelada AARDE','patata pelada quintin':'Patata Pelada QUINTIN','pechuga para cesar library':'Pechuga para Cesar LIBRARY','pechuga para cesar metropolis':'Pechuga para Cesar METROPOLIS',
+    'piña torneada (bandeja)':'Piña torneada','pisto library':'Pisto LIBRARY','polvo de ajo':'Polvo de Ajo','pure de patata amazonico':'Pure de Patata AMAZONICO','pure de patata library':'Pure de Patata LIBRARY',
+    'roast beef library':'Roast Beef LIBRARY','salmorreta amazonico':'Salmorreta AMAZONICO','salpicon de mariscos library':'Salpicon de mariscos LIBRARY',
+    'salsa agridulce de pimiento & piña':'Salsa Agridulce de pimiento y piña','salsa agridulce library':'Salsa Agridulce LIBRARY','salsa anticuchera amazonico':'Salsa Anticuchera AMAZONICO',
+    'salsa bogavante':'Salsa Bogavante','salsa brava':'Salsa Brava','salsa curry aarde':'Salsa Curry AARDE','salsa curry amazonico':'Salsa Curry Amazonico','salsa de cochinita':'Salsa de Cochinita',
+    'salsa de erizo':'Salsa de Erizo','salsa de manitas':'Salsa de Manitas','salsa de manitas metropolis':'Salsa de Manitas METROPOLIS','salsa de rabo px':'Salsa de rabo PX','salsa de rabo px numa':'Salsa de rabo PX NUMA',
+    'salsa marinera library':'Salsa Marinera LIBRARY','salsa suquet library':'Salsa Suquet LIBRARY','salsa suquet metropolis':'Salsa Suquet METROPOLIS','salsa verde':'Salsa verde','salsa verde c/chirlas':'Salsa verde c/CHIRLAS',
+    'setas silvestres guisadas library':'Setas silvestres guisadas LIBRARY','sonso de yuca amazonico':'SONSO de Yuca AMAZONICO','verdura p/ lasaña metropolis':'Verdura p/ Lasaña METROPOLIS',
+    'verdura wok':'Verdura Wok','vichyssoise aarde':'Vichyssoise AARDE','vinagreta de frambuesa':'Vinagreta de Frambuesa','vinagreta de tomate':'Vinagreta de tomate','yema cocida':'Yema cocida',
+    'bandeja de rollito (pato)':'Rollito de verdura PATO'
+  };
+  if(MAP[n])return MAP[n];
+  let m=n.match(/^(helado de .+|sorbete de .+) \((pozzetti|tupper)\)$/);
+  if(m)return m[1].toUpperCase()+' ('+(m[2]==='pozzetti'?'P':'T')+')';
+  return name;
+}
 function buildExpedicionCSV(orders){
   let csv='AÑO;MES;AREA;FECHA EXP;RESTAURANTE;PREPARACIONES;LOTE;QTY;T.SALIDA;T.RECEPCION;RESPONSABLE\n';
-  let lines=0;
+  const rows=[];
+  const orderAreas=(typeof ZONE_ORDER!=='undefined'&&ZONE_ORDER.length)?ZONE_ORDER.slice():[];
   orders.forEach(o=>{(o.items||[]).forEach(it=>{
     if(skipExpedicion(it))return;
     if(!itemMatchProd(it.name))return;
@@ -1716,11 +1765,23 @@ function buildExpedicionCSV(orders){
     const area=zonaDe(o.rest,it.name,it.area);
     const lote=isAutoLoteWA(it)?fmtD(fecha):'';
     const rest=o.rest+(o.turno==='TARDE'?' TARDE':'')+(o.planta?(' PLANTA '+o.planta):'');
-    const prod=String(it.name||'').replace(/"/g,'""');
-    csv+=fecha.slice(0,4)+';'+mesNombreES(fecha)+';'+area+';'+fmtD(fecha)+';'+rest+';"'+prod+'";'+lote+';'+it.qty+';;;GUSTAVO\n';
-    lines++;
+    const visible=nombreDescarga(it.name);
+    const key=[rest,fmtD(fecha),area,normDesc(visible),lote].join('|');
+    if(rows.some(r=>r.key===key))return;
+    rows.push({key,fecha:fmtD(fecha),rest,area,prod:visible,qty:it.qty,lote,iso:fecha});
   });});
-  return {csv,lines};
+  rows.sort((a,b)=>{
+    const da=String(b.iso||'').localeCompare(String(a.iso||''));
+    if(da)return da;
+    const dr=String(a.rest||'').localeCompare(String(b.rest||''),'es');
+    if(dr)return dr;
+    const ia=orderAreas.indexOf(a.area); const ib=orderAreas.indexOf(b.area);
+    const za=(ia<0?999:ia)-(ib<0?999:ib);
+    if(za)return za;
+    return String(a.prod||'').localeCompare(String(b.prod||''),'es');
+  });
+  rows.forEach(r=>{csv+=r.iso.slice(0,4)+';'+mesNombreES(r.iso)+';'+r.area+';'+r.fecha+';'+r.rest+';"'+String(r.prod).replace(/"/g,'""')+'";'+r.lote+';'+r.qty+';;;GUSTAVO\n';});
+  return {csv,lines:rows.length,rows};
 }
 function alcachofaTipo(name){const n=normDesc(name);if(n.includes('flor'))return 'FLOR';if(n.includes('fondo'))return 'FONDO';return 'OTRO';}
 function fmtKg(n){return String(Math.round(Number(n)*100)/100).replace('.',',');}
@@ -1743,7 +1804,7 @@ function buildAlcachofasCSV(orders){
   let csv='DETALLE PEDIDOS;;;;;;;RESUMEN X TIPO;;;\nFecha;Restaurante;Tipo;Cantidad;Peso bandeja;KG;;Restaurante;Tipo;Cantidad;KG\n';
   const n=Math.max(detail.length,summary.length);
   for(let i=0;i<n;i++){let left=';;;;;;;';if(i<detail.length){const d=detail[i];left=`${d.fecha};${d.rest};${d.tipo};${d.q};${fmtKg(d.peso)};${fmtKg(d.kg)};;`;}let right='';if(i<summary.length){const s=summary[i];right=`${s.rest};${s.tipo};${s.q};${fmtKg(s.kg)}`;}csv+=left+right+'\n';}
-  return {csv,lines:detail.length};
+  return {csv,lines:detail.length,detail};
 }
 function quitarDescargados(pred){
   state.orders=(state.orders||[]).map(o=>{
@@ -1808,12 +1869,36 @@ function renderDescargas(){
     <p style="font-size:0.72rem;color:var(--text-muted);margin:0.45rem 0 0">${syncTxt}</p>
   </div>
   <div class="dl-card">
+    <div class="dl-title">Pedidos guardados (${(state.orders||[]).filter(matchesDl).length})</div>
+    ${(state.orders||[]).filter(matchesDl).map(o=>`<div style="border-top:1px solid #eee;padding:0.45rem 0;font-size:0.78rem"><strong>${o.rest}</strong> · ${fmtD(o.deliveryDate)}${o.turno==='TARDE'?' · TARDE':''}${o.planta?' · Planta '+o.planta:''}<br>${(o.items||[]).map(it=>it.qty+' × '+it.name).join('<br>')}</div>`).join('')||'<p style="font-size:0.78rem;color:var(--text-muted)">No hay pedidos guardados.</p>'}
+  </div>
+  <div class="dl-card">
     <div class="dl-title">Detalle expedición (${exp.lines})</div>
     <button type="button" class="dl-btn dark" onclick="descargarExpedicion()">Descargar CSV</button>
+    <div style="margin-top:0.7rem;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:0.78rem">
+        <thead><tr style="text-align:left;border-bottom:1px solid var(--border)">
+          <th style="padding:0.3rem">Fecha</th><th>Restaurante</th><th>Zona</th><th>Producto</th><th>Cant.</th><th>Lote</th>
+        </tr></thead>
+        <tbody>
+          ${exp.rows.map(r=>`<tr style="border-bottom:1px solid #eee"><td style="padding:0.3rem">${r.fecha}</td><td>${r.rest}</td><td>${r.area}</td><td>${r.prod}</td><td>${r.qty}</td><td>${r.lote||''}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
   </div>
   <div class="dl-card">
     <div class="dl-title">Detalle alcachofas (${alca.lines})</div>
     <button type="button" class="dl-btn gold" onclick="descargarAlcachofas()">Descargar CSV</button>
+    <div style="margin-top:0.7rem;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:0.78rem">
+        <thead><tr style="text-align:left;border-bottom:1px solid var(--border)">
+          <th style="padding:0.3rem">Fecha</th><th>Restaurante</th><th>Tipo</th><th>Bandejas</th><th>KG</th>
+        </tr></thead>
+        <tbody>
+          ${alca.detail.map(r=>`<tr style="border-bottom:1px solid #eee"><td style="padding:0.3rem">${r.fecha}</td><td>${r.rest}</td><td>${r.tipo}</td><td>${r.q}</td><td>${r.kg}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
   </div>`;
 }
 initHistorialSync().then(function(){if(state.view==='DESCARGAS')render();});
