@@ -1644,7 +1644,7 @@ let syncReady = false;
 function normDesc(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
 function includeInDescarga(name){if(!name)return false;if(normDesc(name).includes('alcachofa'))return false;const k=normDesc(name);return (DOWNLOAD_INCLUDE||[]).some(x=>normDesc(x)===k);}
 function isAlcachofaItem(it){return !!(it && (normDesc(it.name).includes('alcachofa') || String(it.area||'').toUpperCase()==='ALCACHOFAS'));}
-function skipExpedicion(it){if(!it)return true;if(isAlcachofaItem(it))return true;if(it.area==='OTROS'||it.area==='BEBIDAS'||it.area==='POSTRES')return true;if(!includeInDescarga(it.name))return true;const n=normDesc(it.name);if(n.includes('corvina')||n.includes('merluza')||n.includes('lubina'))return true;return false;}
+function skipExpedicion(it){if(!it)return true;if(isAlcachofaItem(it))return true;if(!includeInDescarga(it.name))return true;const n=normDesc(it.name);if(n.includes('corvina')||n.includes('merluza')||n.includes('lubina'))return true;return false;}
 function isAutoLoteWA(it){const n=normDesc(it&&it.name);return n.includes('(pozzetti)')||n.includes('helado de te')||n.includes('helado de dulce de leche')||n.includes('chusco (horneado)');}
 function mesNombreES(iso){const meses=['','ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];const m=parseInt(String(iso||'').split('-')[1],10);return meses[m]||'';}
 function zonaDe(rest,name,area){const map=(typeof WA_GRUPO_POR_REST!=='undefined'&&WA_GRUPO_POR_REST[rest])||{};return map[name]||waGrupo(name,area);}
