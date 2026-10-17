@@ -1783,7 +1783,7 @@ function buildExpedicionCSV(orders){
 function alcachofaTipo(name){const n=normDesc(name);if(n.includes('flor'))return 'FLOR';if(n.includes('fondo'))return 'FONDO';return 'OTRO';}
 function fmtKg(n){return String(Math.round(Number(n)*100)/100).replace('.',',');}
 function buildAlcachofasCSV(orders){
-  const detail=[];const resumen={};
+  const detail=[];
   orders.forEach(o=>{(o.items||[]).forEach(it=>{
     if(!isAlcachofaItem(it))return;
     if(!itemMatchProd(it.name))return;
@@ -1791,18 +1791,11 @@ function buildAlcachofasCSV(orders){
     const peso=tipo==='FLOR'?1.25:(tipo==='FONDO'?0.75:0);
     const bandejas=(Number(it.qty)||0)*4;
     const kg=Math.round(bandejas*peso*100)/100;
-    const restLabel=o.rest+(o.planta?(' '+o.planta):'');
+    const restLabel=o.rest+(o.planta?(' '+o.planta):'')+(o.metropolisPlanta?(' '+o.metropolisPlanta):'');
     detail.push({fecha:fmtD(o.deliveryDate),rest:restLabel,tipo,q:bandejas,peso,kg});
-    const rkey=restLabel;
-    if(!resumen[rkey])resumen[rkey]={FLOR:{qty:0,kg:0},FONDO:{qty:0,kg:0}};
-    const b=resumen[rkey][tipo]||resumen[rkey].FONDO;
-    b.qty+=bandejas;b.kg+=kg;
   });});
-  const summary=[];
-  Object.keys(resumen).sort().forEach(rest=>['FLOR','FONDO'].forEach(tipo=>{const b=resumen[rest][tipo];if(b&&b.qty>0)summary.push({rest,tipo,q:b.qty,kg:Math.round(b.kg*100)/100});}));
-  let csv='DETALLE PEDIDOS;;;;;;;RESUMEN X TIPO;;;\nFecha;Restaurante;Tipo;Cantidad;Peso bandeja;KG;;Restaurante;Tipo;Cantidad;KG\n';
-  const n=Math.max(detail.length,summary.length);
-  for(let i=0;i<n;i++){let left=';;;;;;;';if(i<detail.length){const d=detail[i];left=`${d.fecha};${d.rest};${d.tipo};${d.q};${fmtKg(d.peso)};${fmtKg(d.kg)};;`;}let right='';if(i<summary.length){const s=summary[i];right=`${s.rest};${s.tipo};${s.q};${fmtKg(s.kg)}`;}csv+=left+right+'\n';}
+  let csv='Fecha;Restaurante;Tipo;Cantidad;Peso bandeja;KG\n';
+  detail.forEach(d=>{csv+=`${d.fecha};${d.rest};${d.tipo};${d.q};${fmtKg(d.peso)};${fmtKg(d.kg)}\n`;});
   return {csv,lines:detail.length,detail};
 }
 function quitarDescargados(pred){
