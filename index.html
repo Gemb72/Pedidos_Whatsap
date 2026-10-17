@@ -1836,12 +1836,7 @@ function descargarAlcachofas(){
   render();
 }
 function renderDescargas(){
-  if(!state.dlFrom && !state.dlTo){
-    const t=new Date();
-    const iso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
-    state.dlFrom=iso;
-    state.dlTo=iso;
-  }
+  // Fechas vacías = sin filtro (todos los pedidos). No forzar hoy al borrar.
   if(!state.authDescargas){
     app.innerHTML=`
     <div class="view-nav-bar"><button type="button" class="btn-soft-back" onclick="salirDescargas()">← Salir</button><div class="nav-rest-badge"><h2 class="nav-rest-title">Descargas</h2></div></div>
@@ -1867,11 +1862,12 @@ function renderDescargas(){
         <option value="">Todos</option>
         ${rests.map(r=>`<option value="${r}" ${state.dlRest===r?'selected':''}>${r}</option>`).join('')}
       </select>
-      <input type="date" value="${state.dlFrom||''}" onchange="state.dlFrom=this.value;render()" style="padding:0.45rem;border-radius:10px;border:1px solid var(--border)">
-      <input type="date" value="${state.dlTo||''}" onchange="state.dlTo=this.value;render()" style="padding:0.45rem;border-radius:10px;border:1px solid var(--border)">
+      <input type="date" value="${state.dlFrom||''}" onchange="state.dlFrom=this.value;render()" oninput="if(!this.value){state.dlFrom='';render()}" style="padding:0.45rem;border-radius:10px;border:1px solid var(--border)">
+      <input type="date" value="${state.dlTo||''}" onchange="state.dlTo=this.value;render()" oninput="if(!this.value){state.dlTo='';render()}" style="padding:0.45rem;border-radius:10px;border:1px solid var(--border)">
       <input type="text" placeholder="Producto" value="${state.dlProd||''}" oninput="state.dlProd=this.value;render()" style="flex:1;min-width:140px;padding:0.45rem;border-radius:10px;border:1px solid var(--border)">
+      <button type="button" class="dl-btn dark" style="padding:0.45rem 0.7rem;font-size:0.72rem" onclick="state.dlFrom='';state.dlTo='';state.dlRest='';state.dlProd='';render()">Limpiar filtro</button>
     </div>
-    <p style="font-size:0.72rem;color:var(--text-muted);margin:0.45rem 0 0">${syncTxt}</p>
+    <p style="font-size:0.72rem;color:var(--text-muted);margin:0.45rem 0 0">${syncTxt} · Fechas vacías = todos los pedidos</p>
   </div>
   <div class="dl-card">
     <div class="dl-title">Detalle expedición (${exp.lines})</div>
