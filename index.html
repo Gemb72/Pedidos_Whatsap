@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Pedidos WA V201026</title>
+<title>Pedidos WA V20.10.26</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1422,7 +1422,7 @@ function renderRestaurantCatalog() {
     </button>`}
     <div class="nav-rest-badge">
       <h2 class="nav-rest-title">${state.selRest}</h2>
-      <div class="rest-version-mark">V201026</div>
+      <div class="rest-version-mark">V20.10.26</div>
     </div>
   </div>
 
@@ -1651,7 +1651,7 @@ const AUTO_LOTE = ["Bandeja de rollito (PATO)", "Helado de avellana (Pozzetti)",
 const DESCARGAS_PIN = 'PARAGUAS@1';
 const SUPABASE_URL = 'https://pxtyrdpqwupneotyjvpp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4dHlyZHBxd3VwbmVvdHlqdnBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDk4NzAsImV4cCI6MjEwMTg4NTg3MH0.XlYjuhYhw-UXJr3YYrPd_MQ9Jpl7L0Y8ZuwbwY_c980';
-const APP_VERSION = 'V201026';
+const APP_VERSION = 'V20.10.26';
 const LS_ORDERS = 'wa_historial_v3';
 const LS_PURGED = 'wa_purged_v1';
 let sb = null;
@@ -1922,7 +1922,7 @@ function renderDescargas(){
   // Fechas vacías = sin filtro (todos los pedidos). No forzar hoy al borrar.
   if(!state.authDescargas){
     app.innerHTML=`
-    <div class="view-nav-bar"><button type="button" class="btn-soft-back" onclick="salirDescargas()">← Salir</button><div class="nav-rest-badge"><h2 class="nav-rest-title">Descargas <span style="font-size:0.62rem;font-weight:600;opacity:.55;margin-left:0.35rem">V201026</span></h2></div></div>
+    <div class="view-nav-bar"><button type="button" class="btn-soft-back" onclick="salirDescargas()">← Salir</button><div class="nav-rest-badge"><h2 class="nav-rest-title">Descargas <span style="font-size:0.62rem;font-weight:600;opacity:.55;margin-left:0.35rem">V20.10.26</span></h2></div></div>
     <div class="pin-box">
       <label style="font-size:0.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase">Contraseña</label>
       <input id="dl-pin" type="password" placeholder="Ingresá la contraseña" autofocus onkeydown="if(event.key==='Enter')loginDescargas()">
@@ -1936,7 +1936,7 @@ function renderDescargas(){
   const rests=Object.keys(RESTAURANTS_CONFIG);
   const syncTxt=(cloudSynced?'Nube OK':'Sin nube')+' · '+(syncReady?'sync':'local');
   app.innerHTML=`
-  <div class="view-nav-bar"><button type="button" class="btn-soft-back" onclick="salirDescargas()">← Salir</button><div class="nav-rest-badge"><h2 class="nav-rest-title">Descargas <span style="font-size:0.62rem;font-weight:600;opacity:.55;margin-left:0.35rem">V201026</span></h2></div></div>
+  <div class="view-nav-bar"><button type="button" class="btn-soft-back" onclick="salirDescargas()">← Salir</button><div class="nav-rest-badge"><h2 class="nav-rest-title">Descargas <span style="font-size:0.62rem;font-weight:600;opacity:.55;margin-left:0.35rem">V20.10.26</span></h2></div></div>
   ${state.successMessage?`<div class="toast-msg success"><div>${state.successMessage}</div><button type="button" class="toast-close" onclick="state.successMessage='';render()">×</button></div>`:''}
   <div class="dl-card">
     <div class="dl-title">Filtro</div>
@@ -1984,6 +1984,6 @@ function renderDescargas(){
 initHistorialSync().then(function(){if(state.view==='DESCARGAS')render();});
 
 </script>
-<div class="app-version-badge" id="app-version-badge">V201026</div>
+<div class="app-version-badge" id="app-version-badge">V20.10.26</div>
 </body>
 </html>
