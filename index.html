@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Pedidos · WhatsApp (zonas)</title>
+<title>Pedidos WA V201026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -837,6 +837,18 @@ body {
 .pin-box{max-width:360px;margin:1.5rem auto;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1rem;}
 .pin-box input{width:100%;padding:0.7rem;border:1px solid var(--border);border-radius:10px;font-size:1rem;}
 
+.app-version-badge{position:fixed;bottom:8px;right:10px;font-size:0.65rem;font-weight:700;letter-spacing:0.06em;color:rgba(0,0,0,.35);z-index:50;pointer-events:none;font-family:inherit}
+  .rest-version-mark {
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.22);
+    margin-top: 0.1rem;
+    text-align: center;
+  }
+  .nav-rest-badge { display: flex; flex-direction: column; align-items: center; }
+
 </style>
 </head>
 <body>
@@ -1410,6 +1422,7 @@ function renderRestaurantCatalog() {
     </button>`}
     <div class="nav-rest-badge">
       <h2 class="nav-rest-title">${state.selRest}</h2>
+      <div class="rest-version-mark">V201026</div>
     </div>
   </div>
 
@@ -1638,6 +1651,7 @@ const AUTO_LOTE = ["Bandeja de rollito (PATO)", "Helado de avellana (Pozzetti)",
 const DESCARGAS_PIN = 'PARAGUAS@1';
 const SUPABASE_URL = 'https://pxtyrdpqwupneotyjvpp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4dHlyZHBxd3VwbmVvdHlqdnBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDk4NzAsImV4cCI6MjEwMTg4NTg3MH0.XlYjuhYhw-UXJr3YYrPd_MQ9Jpl7L0Y8ZuwbwY_c980';
+const APP_VERSION = 'V201026';
 const LS_ORDERS = 'wa_historial_v3';
 const LS_PURGED = 'wa_purged_v1';
 let sb = null;
@@ -1675,7 +1689,17 @@ function ordersForCloud(){
 }
 
 function normDesc(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
-function includeInDescarga(name){if(!name)return false;if(normDesc(name).includes('alcachofa'))return false;const k=normDesc(name);return (DOWNLOAD_INCLUDE||[]).some(x=>normDesc(x)===k);}
+function includeInDescarga(name){
+  if(!name)return false;
+  if(normDesc(name).includes('alcachofa'))return false;
+  const k=normDesc(name);
+  const list=DOWNLOAD_INCLUDE||[];
+  if(list.some(x=>normDesc(x)===k))return true;
+  // tolerancia: mismo nombre sin sufijo de restaurante
+  const strip=k.replace(/\b(aarde|amazonico|numa|paraguas|quintin|tenconten|aurea|library|metropolis)\b/g,'').replace(/\s+/g,' ').trim();
+  if(strip&&list.some(x=>{const y=normDesc(x).replace(/\b(aarde|amazonico|numa|paraguas|quintin|tenconten|aurea|library|metropolis)\b/g,'').replace(/\s+/g,' ').trim();return y===strip||y===k||normDesc(x)===strip;}))return true;
+  return false;
+}
 function isAlcachofaItem(it){return !!(it && (normDesc(it.name).includes('alcachofa') || String(it.area||'').toUpperCase()==='ALCACHOFAS'));}
 function skipExpedicion(it){if(!it)return true;if(isAlcachofaItem(it))return true;if(!includeInDescarga(it.name))return true;const n=normDesc(it.name);if(n.includes('corvina')||n.includes('merluza')||n.includes('lubina'))return true;return false;}
 function isAutoLoteWA(it){const n=String(it&&it.name||'');return (typeof AUTO_LOTE!=='undefined'&&AUTO_LOTE.includes(n))||normDesc(n).includes('(pozzetti)');}
@@ -1898,7 +1922,7 @@ function renderDescargas(){
   // Fechas vacías = sin filtro (todos los pedidos). No forzar hoy al borrar.
   if(!state.authDescargas){
     app.innerHTML=`
-    <div class="view-nav-bar"><button type="button" class="btn-soft-back" onclick="salirDescargas()">← Salir</button><div class="nav-rest-badge"><h2 class="nav-rest-title">Descargas</h2></div></div>
+    <div class="view-nav-bar"><button type="button" class="btn-soft-back" onclick="salirDescargas()">← Salir</button><div class="nav-rest-badge"><h2 class="nav-rest-title">Descargas <span style="font-size:0.62rem;font-weight:600;opacity:.55;margin-left:0.35rem">V201026</span></h2></div></div>
     <div class="pin-box">
       <label style="font-size:0.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase">Contraseña</label>
       <input id="dl-pin" type="password" placeholder="Ingresá la contraseña" autofocus onkeydown="if(event.key==='Enter')loginDescargas()">
@@ -1910,9 +1934,9 @@ function renderDescargas(){
   const exp=buildExpedicionCSV(orders);
   const alca=buildAlcachofasCSV(orders);
   const rests=Object.keys(RESTAURANTS_CONFIG);
-  const syncTxt=syncReady?'En sync':'Solo en este celular (base pausada o sin red)';
+  const syncTxt=(cloudSynced?'Nube OK':'Sin nube')+' · '+(syncReady?'sync':'local');
   app.innerHTML=`
-  <div class="view-nav-bar"><button type="button" class="btn-soft-back" onclick="salirDescargas()">← Salir</button><div class="nav-rest-badge"><h2 class="nav-rest-title">Descargas</h2></div></div>
+  <div class="view-nav-bar"><button type="button" class="btn-soft-back" onclick="salirDescargas()">← Salir</button><div class="nav-rest-badge"><h2 class="nav-rest-title">Descargas <span style="font-size:0.62rem;font-weight:600;opacity:.55;margin-left:0.35rem">V201026</span></h2></div></div>
   ${state.successMessage?`<div class="toast-msg success"><div>${state.successMessage}</div><button type="button" class="toast-close" onclick="state.successMessage='';render()">×</button></div>`:''}
   <div class="dl-card">
     <div class="dl-title">Filtro</div>
@@ -1960,5 +1984,6 @@ function renderDescargas(){
 initHistorialSync().then(function(){if(state.view==='DESCARGAS')render();});
 
 </script>
+<div class="app-version-badge" id="app-version-badge">V201026</div>
 </body>
 </html>
